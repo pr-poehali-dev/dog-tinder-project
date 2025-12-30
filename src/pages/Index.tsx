@@ -196,7 +196,7 @@ export default function Index() {
             onClick={() => handleSwipe('right')}
             disabled={isAnimating}
             size="lg"
-            className="h-20 w-20 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 text-white hover:opacity-90 shadow-xl"
+            className="h-20 w-20 rounded-full bg-gradient-to-r from-[#FF5733] to-[#FFA500] text-white hover:opacity-90 shadow-xl"
           >
             <Icon name="Heart" size={36} />
           </Button>
@@ -207,7 +207,7 @@ export default function Index() {
 
   const renderLikesTab = () => (
     <div className="flex-1 p-4 pb-24 overflow-auto">
-      <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-pink-500 to-orange-400 bg-clip-text text-transparent">
+      <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-[#FF5733] to-[#FFA500] bg-clip-text text-transparent">
         Понравившиеся 💕
       </h2>
       {likes.length === 0 ? (
@@ -238,7 +238,7 @@ export default function Index() {
 
   const renderMessagesTab = () => (
     <div className="flex-1 p-4 pb-24">
-      <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-pink-500 to-orange-400 bg-clip-text text-transparent">
+      <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-[#FF5733] to-[#FFA500] bg-clip-text text-transparent">
         Сообщения 💬
       </h2>
       <div className="text-center mt-20">
@@ -253,13 +253,13 @@ export default function Index() {
 
   const renderProfileTab = () => (
     <div className="flex-1 p-4 pb-24 overflow-auto">
-      <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-pink-500 to-orange-400 bg-clip-text text-transparent">
+      <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-[#FF5733] to-[#FFA500] bg-clip-text text-transparent">
         Платные услуги 🎯
       </h2>
       <div className="max-w-md mx-auto space-y-4">
         <Card className="p-6 hover:shadow-xl transition-shadow">
           <div className="flex items-start gap-4">
-            <div className="bg-gradient-to-br from-pink-500 to-orange-400 rounded-full p-3">
+            <div className="bg-gradient-to-br from-[#FF5733] to-[#FFA500] rounded-full p-3">
               <Icon name="Stethoscope" size={32} className="text-white" />
             </div>
             <div className="flex-1">
@@ -271,7 +271,7 @@ export default function Index() {
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold text-primary">7 500 ₽</span>
-                <Button className="bg-gradient-to-r from-pink-500 to-orange-400">
+                <Button className="bg-gradient-to-r from-[#FF5733] to-[#FFA500] hover:opacity-90">
                   Подключить
                 </Button>
               </div>
@@ -281,7 +281,7 @@ export default function Index() {
 
         <Card className="p-6 hover:shadow-xl transition-shadow">
           <div className="flex items-start gap-4">
-            <div className="bg-gradient-to-br from-purple-500 to-blue-400 rounded-full p-3">
+            <div className="bg-gradient-to-br from-[#FF5733] to-[#FFA500] rounded-full p-3">
               <Icon name="FileCheck" size={32} className="text-white" />
             </div>
             <div className="flex-1">
@@ -291,7 +291,7 @@ export default function Index() {
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-3xl font-bold text-secondary">500 ₽</span>
-                <Button className="bg-gradient-to-r from-purple-500 to-blue-400">
+                <Button className="bg-gradient-to-r from-[#FF5733] to-[#FFA500] hover:opacity-90">
                   Проверить
                 </Button>
               </div>
@@ -303,13 +303,10 @@ export default function Index() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-orange-50 to-purple-50 flex flex-col">
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm p-4 sticky top-0 z-10">
-        <div className="flex items-center justify-center gap-2">
-          <Icon name="Dog" size={32} className="text-primary" />
-          <h1 className="text-4xl font-fredoka font-bold bg-gradient-to-r from-pink-500 to-orange-400 bg-clip-text text-transparent">
-            TinDog
-          </h1>
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="bg-white shadow-sm p-4 sticky top-0 z-10 border-b">
+        <div className="flex items-center justify-center gap-3">
+          <img src="https://cdn.poehali.dev/files/photo_5377747840479727438_x.jpg" alt="TinDog" className="h-12 w-auto" />
         </div>
       </header>
 

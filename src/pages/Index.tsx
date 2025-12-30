@@ -58,6 +58,8 @@ export default function Index() {
   const [animationType, setAnimationType] = useState<'left' | 'right' | null>(null);
   const [activeTab, setActiveTab] = useState<'home' | 'likes' | 'messages' | 'profile'>('home');
   const [likes, setLikes] = useState<DogProfile[]>([]);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const currentDog = dogs[currentDogIndex];
 
@@ -79,16 +81,55 @@ export default function Index() {
       }
       setIsAnimating(false);
       setAnimationType(null);
+      setDragOffset({ x: 0, y: 0 });
     }, 500);
+  };
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isAnimating) return;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    setDragStart({ x: clientX, y: clientY });
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!dragStart || isAnimating) return;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const deltaX = clientX - dragStart.x;
+    const deltaY = clientY - dragStart.y;
+    setDragOffset({ x: deltaX, y: deltaY });
+  };
+
+  const handleDragEnd = () => {
+    if (!dragStart || isAnimating) return;
+    const threshold = 100;
+    if (Math.abs(dragOffset.x) > threshold) {
+      handleSwipe(dragOffset.x > 0 ? 'right' : 'left');
+    } else {
+      setDragOffset({ x: 0, y: 0 });
+    }
+    setDragStart(null);
   };
 
   const renderHomeTab = () => (
     <div className="flex-1 flex items-center justify-center p-4 pb-24">
       {currentDog ? (
         <Card
-          className={`relative w-full max-w-md h-[600px] overflow-hidden shadow-2xl ${
+          className={`relative w-full max-w-md h-[600px] overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing ${
             animationType === 'left' ? 'animate-swipe-left' : ''
           } ${animationType === 'right' ? 'animate-swipe-right' : ''}`}
+          style={{
+            transform: !isAnimating ? `translateX(${dragOffset.x}px) translateY(${dragOffset.y * 0.3}px) rotate(${dragOffset.x * 0.1}deg)` : undefined,
+            transition: !dragStart && !isAnimating ? 'transform 0.3s ease-out' : 'none',
+          }}
+          onMouseDown={handleDragStart}
+          onMouseMove={handleDragMove}
+          onMouseUp={handleDragEnd}
+          onMouseLeave={handleDragEnd}
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
         >
           <div className="relative h-full">
             <img
@@ -98,13 +139,25 @@ export default function Index() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-            <div className="absolute top-4 right-4 flex gap-2">
+            <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
+              <div
+                className="text-6xl font-bold text-red-500 opacity-0 transition-opacity"
+                style={{ opacity: dragOffset.x < -50 ? Math.min(Math.abs(dragOffset.x) / 150, 1) : 0 }}
+              >
+                ✕
+              </div>
               {currentDog.verified && (
                 <Badge className="bg-blue-500 text-white">
                   <Icon name="BadgeCheck" size={14} className="mr-1" />
                   Проверен
                 </Badge>
               )}
+              <div
+                className="text-6xl font-bold text-green-500 opacity-0 transition-opacity"
+                style={{ opacity: dragOffset.x > 50 ? Math.min(dragOffset.x / 150, 1) : 0 }}
+              >
+                ♥
+              </div>
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">

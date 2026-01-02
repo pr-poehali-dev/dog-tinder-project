@@ -254,7 +254,7 @@ export default function Index() {
   const renderProfileTab = () => (
     <div className="flex-1 p-4 pb-24 overflow-auto">
       <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-[#FF5733] to-[#FFA500] bg-clip-text text-transparent">
-        Платные услуги 🎯
+        Платные услуги 🐾
       </h2>
       <div className="max-w-md mx-auto space-y-4">
         <Card className="p-6 hover:shadow-xl transition-shadow">
@@ -358,6 +358,13 @@ export default function Index() {
             <Icon name="ShoppingBag" size={24} />
             <span className="text-xs font-medium">Услуги</span>
           </button>
+          <a
+            href="/profile"
+            className={`flex flex-col items-center gap-1 transition-colors text-muted-foreground`}
+          >
+            <Icon name="User" size={24} />
+            <span className="text-xs font-medium">Кабинет</span>
+          </a>
         </div>
       </nav>
     </div>

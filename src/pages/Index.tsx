@@ -298,6 +298,15 @@ export default function Index() {
             </div>
           </div>
         </Card>
+
+        <div className="mt-8 text-center">
+          <a 
+            href="/oferta" 
+            className="text-sm text-muted-foreground hover:text-primary underline"
+          >
+            Публичная оферта
+          </a>
+        </div>
       </div>
     </div>
   );

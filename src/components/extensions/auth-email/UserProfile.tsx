@@ -108,7 +108,14 @@ export function UserProfile({
         )}
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-2">
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => window.location.href = '/'}
+        >
+          На главную
+        </Button>
         <Button
           variant="outline"
           className="w-full"

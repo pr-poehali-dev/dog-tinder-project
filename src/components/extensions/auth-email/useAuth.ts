@@ -27,25 +27,30 @@ const REFRESH_TOKEN_KEY = "auth_refresh_token";
 
 export interface User {
   id: number;
-  email: string;
+  email?: string;
+  phone?: string;
   name: string | null;
   email_verified?: boolean;
+  phone_verified?: boolean;
 }
 
 export interface LoginPayload {
-  email: string;
+  email?: string;
+  phone?: string;
   password: string;
 }
 
 export interface RegisterPayload {
-  email: string;
+  email?: string;
+  phone?: string;
   password: string;
   name?: string;
 }
 
 export interface RegisterResult {
   success: boolean;
-  emailVerificationRequired: boolean;
+  emailVerificationRequired?: boolean;
+  phoneVerificationRequired?: boolean;
   message?: string;
 }
 
@@ -53,6 +58,7 @@ interface AuthApiUrls {
   login: string;
   register: string;
   verifyEmail: string;
+  verifyPhone: string;
   refresh: string;
   logout: string;
   resetPassword: string;
@@ -74,10 +80,10 @@ interface UseAuthReturn {
   login: (payload: LoginPayload) => Promise<boolean>;
   register: (payload: RegisterPayload) => Promise<RegisterResult>;
   verifyEmail: (email: string, code: string) => Promise<boolean>;
+  verifyPhone: (phone: string, code: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
-  requestPasswordReset: (email: string) => Promise<{ code?: string }>;
-  resetPassword: (email: string, code: string, newPassword: string) => Promise<boolean>;
+  resetPassword: (payload: { email?: string; phone?: string; newPassword?: string; code?: string }) => Promise<{ success: boolean; message?: string }>;
   getAuthHeader: () => { Authorization: string } | {};
 }
 
@@ -259,24 +265,23 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
           return { success: false, emailVerificationRequired: false };
         }
 
-        // If email verification required, don't auto-login
-        if (data.email_verification_required) {
+        // If email or phone verification required, don't auto-login
+        if (data.email_verification_required || data.phone_verification_required) {
           return {
             success: true,
-            emailVerificationRequired: true,
+            emailVerificationRequired: data.email_verification_required,
+            phoneVerificationRequired: data.phone_verification_required,
             message: data.message,
           };
         }
 
         // Auto-login if no verification needed
-        const loginSuccess = await login({
-          email: payload.email,
-          password: payload.password,
-        });
+        const loginSuccess = await login(payload);
 
         return {
           success: loginSuccess,
           emailVerificationRequired: false,
+          phoneVerificationRequired: false,
         };
       } catch (err) {
         setError("Ошибка сети");
@@ -311,7 +316,7 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
         }
 
         return true;
-      } catch {
+      } catch (err) {
         setError("Ошибка сети");
         return false;
       } finally {
@@ -319,6 +324,39 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
       }
     },
     [apiUrls.verifyEmail]
+  );
+
+  /**
+   * Verify phone with 6-digit code
+   */
+  const verifyPhone = useCallback(
+    async (phone: string, code: string): Promise<boolean> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(apiUrls.verifyPhone, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone, code }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.error || "Неверный код");
+          return false;
+        }
+
+        return true;
+      } catch {
+        setError("Ошибка сети");
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [apiUrls.verifyPhone]
   );
 
   /**
@@ -341,61 +379,40 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
   }, [apiUrls.logout, clearAuth]);
 
   /**
-   * Request password reset code
-   */
-  const requestPasswordReset = useCallback(
-    async (email: string): Promise<{ code?: string }> => {
-      setError(null);
-
-      try {
-        const response = await fetch(apiUrls.resetPassword, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data.error || "Ошибка");
-          return {};
-        }
-
-        // reset_code returned only in dev mode (no SMTP)
-        return { code: data.reset_code };
-      } catch {
-        setError("Ошибка сети");
-        return {};
-      }
-    },
-    [apiUrls.resetPassword]
-  );
-
-  /**
-   * Reset password with email, code and new password
+   * Reset password with email/phone, optional code and new password
    */
   const resetPassword = useCallback(
-    async (email: string, code: string, newPassword: string): Promise<boolean> => {
+    async (payload: {
+      email?: string;
+      phone?: string;
+      newPassword?: string;
+      code?: string;
+    }): Promise<{ success: boolean; message?: string }> => {
       setError(null);
 
       try {
         const response = await fetch(apiUrls.resetPassword, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, code, new_password: newPassword }),
+          body: JSON.stringify({
+            email: payload.email,
+            phone: payload.phone,
+            code: payload.code,
+            new_password: payload.newPassword,
+          }),
         });
 
         const data = await response.json();
 
         if (!response.ok) {
           setError(data.error || "Ошибка сброса пароля");
-          return false;
+          return { success: false };
         }
 
-        return true;
+        return { success: true, message: data.message };
       } catch {
         setError("Ошибка сети");
-        return false;
+        return { success: false };
       }
     },
     [apiUrls.resetPassword]
@@ -418,9 +435,9 @@ export function useAuth(options: UseAuthOptions): UseAuthReturn {
     login,
     register,
     verifyEmail,
+    verifyPhone,
     logout,
     refreshToken: refreshTokenFn,
-    requestPasswordReset,
     resetPassword,
     getAuthHeader,
   };

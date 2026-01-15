@@ -17,57 +17,49 @@ import {
 } from "@/components/ui/input-otp";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface RegisterResult {
+interface ResetPasswordResult {
   success: boolean;
-  emailVerificationRequired?: boolean;
-  phoneVerificationRequired?: boolean;
   message?: string;
 }
 
-interface RegisterFormProps {
-  onRegister: (payload: {
+interface ForgotPasswordFormProps {
+  onResetPassword: (payload: {
     email?: string;
     phone?: string;
-    password: string;
-    name?: string;
-  }) => Promise<RegisterResult>;
+    newPassword?: string;
+    code?: string;
+  }) => Promise<ResetPasswordResult>;
   onVerifyEmail: (email: string, code: string) => Promise<boolean>;
   onVerifyPhone: (phone: string, code: string) => Promise<boolean>;
-  onLogin: (payload: { email?: string; phone?: string; password: string }) => Promise<boolean>;
-  onSuccess?: () => void;
-  onLoginClick?: () => void;
+  onBackClick?: () => void;
   error?: string | null;
   isLoading?: boolean;
   className?: string;
 }
 
-type Step = "register" | "verify";
+type Step = "request" | "verify" | "new-password";
 type ContactMethod = "email" | "phone";
 
-export function RegisterForm({
-  onRegister,
+export function ForgotPasswordForm({
+  onResetPassword,
   onVerifyEmail,
   onVerifyPhone,
-  onLogin,
-  onSuccess,
-  onLoginClick,
+  onBackClick,
   error,
   isLoading = false,
   className = "",
-}: RegisterFormProps): React.ReactElement {
-  const [step, setStep] = useState<Step>("register");
+}: ForgotPasswordFormProps): React.ReactElement {
+  const [step, setStep] = useState<Step>("request");
   const [contactMethod, setContactMethod] = useState<ContactMethod>("email");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [isResending, setIsResending] = useState(false);
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
 
@@ -81,39 +73,18 @@ export function RegisterForm({
       return;
     }
 
-    if (!password) {
-      setLocalError("Введите пароль");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setLocalError("Пароли не совпадают");
-      return;
-    }
-
-    if (password.length < 8) {
-      setLocalError("Пароль должен содержать минимум 8 символов");
-      return;
-    }
-
-    const result = await onRegister({
+    const result = await onResetPassword({
       email: contactMethod === "email" ? email : undefined,
       phone: contactMethod === "phone" ? phone : undefined,
-      password,
-      name: name || undefined,
     });
 
     if (result.success) {
-      if (result.emailVerificationRequired || result.phoneVerificationRequired) {
-        setMessage(result.message || "Код отправлен");
-        setStep("verify");
-      } else {
-        onSuccess?.();
-      }
+      setMessage(result.message || "Код отправлен");
+      setStep("verify");
     }
   };
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
 
@@ -131,42 +102,123 @@ export function RegisterForm({
     }
 
     if (verified) {
-      const loggedIn = await onLogin({
-        email: contactMethod === "email" ? email : undefined,
-        phone: contactMethod === "phone" ? phone : undefined,
-        password,
-      });
-      
-      if (loggedIn) {
-        onSuccess?.();
-      } else {
-        onLoginClick?.();
-      }
+      setMessage("Код подтвержден. Введите новый пароль");
+      setStep("new-password");
+    }
+  };
+
+  const handleSetNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+
+    if (!newPassword) {
+      setLocalError("Введите новый пароль");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setLocalError("Пароль должен содержать минимум 8 символов");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setLocalError("Пароли не совпадают");
+      return;
+    }
+
+    const result = await onResetPassword({
+      email: contactMethod === "email" ? email : undefined,
+      phone: contactMethod === "phone" ? phone : undefined,
+      code,
+      newPassword,
+    });
+
+    if (result.success) {
+      setMessage("Пароль успешно изменен! Войдите с новым паролем");
+      setTimeout(() => {
+        onBackClick?.();
+      }, 2000);
     }
   };
 
   const handleResend = async () => {
     setLocalError(null);
     setCode("");
-    setIsResending(true);
 
-    try {
-      const result = await onRegister({
-        email: contactMethod === "email" ? email : undefined,
-        phone: contactMethod === "phone" ? phone : undefined,
-        password,
-        name: name || undefined,
-      });
+    const result = await onResetPassword({
+      email: contactMethod === "email" ? email : undefined,
+      phone: contactMethod === "phone" ? phone : undefined,
+    });
 
-      if (result.success) {
-        setMessage("Код отправлен повторно");
-      }
-    } finally {
-      setIsResending(false);
+    if (result.success) {
+      setMessage("Код отправлен повторно");
     }
   };
 
   const displayError = error || localError;
+
+  if (step === "new-password") {
+    return (
+      <Card className={className}>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl">Новый пароль</CardTitle>
+          <CardDescription>
+            Придумайте надежный пароль
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSetNewPassword}>
+          <CardContent className="space-y-4">
+            {message && (
+              <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md">
+                {message}
+              </div>
+            )}
+
+            {displayError && (
+              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                {displayError}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Новый пароль</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={isLoading}
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-muted-foreground">
+                Минимум 8 символов
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={isLoading}
+                autoComplete="new-password"
+              />
+            </div>
+          </CardContent>
+
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Сохранение..." : "Сохранить пароль"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    );
+  }
 
   if (step === "verify") {
     return (
@@ -177,7 +229,7 @@ export function RegisterForm({
             Введите 6-значный код, отправленный на {contactMethod === "email" ? email : phone}
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleVerify}>
+        <form onSubmit={handleVerifyCode}>
           <CardContent className="space-y-4">
             {message && (
               <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md">
@@ -212,13 +264,13 @@ export function RegisterForm({
 
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading || code.length !== 6}>
-              {isLoading ? "Проверка..." : "Подтвердить"}
+              {isLoading ? "Проверка..." : "Подтвердить код"}
             </Button>
 
             <div className="flex items-center justify-between w-full text-sm">
               <button
                 type="button"
-                onClick={() => setStep("register")}
+                onClick={() => setStep("request")}
                 className="text-muted-foreground hover:text-primary"
               >
                 ← Назад
@@ -226,10 +278,10 @@ export function RegisterForm({
               <button
                 type="button"
                 onClick={handleResend}
-                disabled={isLoading || isResending}
+                disabled={isLoading}
                 className="text-primary hover:underline underline-offset-4 disabled:opacity-50"
               >
-                {isResending ? "Отправка..." : "Отправить код повторно"}
+                Отправить код повторно
               </button>
             </div>
           </CardFooter>
@@ -241,40 +293,18 @@ export function RegisterForm({
   return (
     <Card className={className}>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl">Регистрация</CardTitle>
+        <CardTitle className="text-2xl">Забыли пароль?</CardTitle>
         <CardDescription>
-          Создайте аккаунт для начала работы
+          Мы отправим код для восстановления
         </CardDescription>
       </CardHeader>
-      <form onSubmit={handleRegister}>
+      <form onSubmit={handleRequestCode}>
         <CardContent className="space-y-4">
           {displayError && (
             <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
               {displayError}
-              {displayError?.includes("уже существует") && onLoginClick && (
-                <button
-                  type="button"
-                  onClick={onLoginClick}
-                  className="block mt-2 text-primary hover:underline underline-offset-4"
-                >
-                  Войти в существующий аккаунт
-                </button>
-              )}
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label htmlFor="name">Имя</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="Иван Иванов"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={isLoading}
-              autoComplete="name"
-            />
-          </div>
 
           <div className="space-y-2">
             <Label>Способ связи</Label>
@@ -307,53 +337,21 @@ export function RegisterForm({
               </TabsContent>
             </Tabs>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Пароль</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-              autoComplete="new-password"
-            />
-            <p className="text-xs text-muted-foreground">
-              Минимум 8 символов
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={isLoading}
-              autoComplete="new-password"
-            />
-          </div>
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Регистрация..." : "Зарегистрироваться"}
+            {isLoading ? "Отправка..." : "Отправить код"}
           </Button>
 
-          {onLoginClick && (
-            <p className="text-sm text-muted-foreground text-center">
-              Уже есть аккаунт?{" "}
-              <button
-                type="button"
-                onClick={onLoginClick}
-                className="text-primary hover:underline underline-offset-4"
-              >
-                Войти
-              </button>
-            </p>
+          {onBackClick && (
+            <button
+              type="button"
+              onClick={onBackClick}
+              className="text-sm text-muted-foreground hover:text-primary"
+            >
+              ← Вернуться ко входу
+            </button>
           )}
         </CardFooter>
       </form>
@@ -361,4 +359,4 @@ export function RegisterForm({
   );
 }
 
-export default RegisterForm;
+export default ForgotPasswordForm;

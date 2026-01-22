@@ -100,9 +100,9 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white py-12">
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white flex items-center justify-center">
       <div className="container mx-auto px-4 max-w-md">
-        <div className="mb-6">
+        <div className="absolute top-6 left-6">
           <Button
             variant="ghost"
             onClick={() => window.location.href = '/'}

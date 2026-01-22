@@ -1,14 +1,14 @@
 """
-Auth Email Extension - Single Function Router
+Маршрутизатор авторизации с отправкой email-кодов.
 
-Routes (via ?action= query parameter):
-  POST /auth?action=register       - Register new user
-  POST /auth?action=verify-email   - Verify email with 6-digit code
-  POST /auth?action=login          - Login and get tokens
-  POST /auth?action=refresh        - Refresh access token
-  POST /auth?action=logout         - Logout and revoke tokens
-  POST /auth?action=reset-password - Request/complete password reset
-  GET  /auth?action=health         - Check DB schema
+Эндпоинты (через параметр ?action=):
+  POST /auth?action=register       - Регистрация (отправка кода на email)
+  POST /auth?action=verify-email   - Подтверждение email кодом
+  POST /auth?action=login          - Вход в систему
+  POST /auth?action=refresh        - Обновление токена
+  POST /auth?action=logout         - Выход
+  POST /auth?action=reset-password - Сброс пароля (отправка кода)
+  GET  /auth?action=health         - Проверка БД
 """
 from handlers import register, login, logout, refresh, reset_password, health, verify_email
 from utils.http import options_response, error, get_origin_from_event

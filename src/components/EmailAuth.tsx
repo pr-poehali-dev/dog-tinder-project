@@ -82,7 +82,8 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
         throw new Error(data.error || 'Неверный код');
       }
 
-      if (data.authenticated) {
+      if (data.authenticated && data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
         onSuccess(email);
       }
     } catch (err) {

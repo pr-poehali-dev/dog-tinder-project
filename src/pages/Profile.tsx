@@ -1,12 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import EmailAuth from '@/components/EmailAuth';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
+interface User {
+  id: number;
+  email: string;
+  name?: string;
+  phone?: string;
+  city?: string;
+  about?: string;
+  avatar_url?: string;
+  created_at?: string;
+}
+
 export default function Profile() {
-  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem('user');
     setUser(null);
   };
 
@@ -74,7 +93,12 @@ export default function Profile() {
           </Button>
         </div>
 
-        <EmailAuth onSuccess={(email) => setUser({ email })} />
+        <EmailAuth onSuccess={() => {
+          const savedUser = localStorage.getItem('user');
+          if (savedUser) {
+            setUser(JSON.parse(savedUser));
+          }
+        }} />
       </div>
     </div>
   );

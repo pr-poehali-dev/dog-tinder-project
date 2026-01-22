@@ -5,6 +5,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import secrets
 import time
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 def handler(event: dict, context) -> dict:
     """API для авторизации через email с кодом подтверждения"""
@@ -119,12 +121,53 @@ def verify_code(body: dict) -> dict:
             'body': json.dumps({'error': 'Invalid code'})
         }
     
+    user = get_or_create_user(email)
+    
     return {
         'statusCode': 200,
         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
         'body': json.dumps({
             'success': True,
-            'email': email,
+            'user': user,
             'authenticated': True
         })
     }
+
+
+def get_or_create_user(email: str) -> dict:
+    """Получить или создать пользователя в базе данных"""
+    
+    database_url = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(database_url)
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id, email, name, phone, city, about, avatar_url, created_at FROM t_p11971418_dog_tinder_project.users WHERE email = %s",
+                (email,)
+            )
+            user = cur.fetchone()
+            
+            if user:
+                cur.execute(
+                    "UPDATE t_p11971418_dog_tinder_project.users SET last_login_at = CURRENT_TIMESTAMP WHERE id = %s",
+                    (user['id'],)
+                )
+                conn.commit()
+                user_dict = dict(user)
+                if user_dict.get('created_at'):
+                    user_dict['created_at'] = user_dict['created_at'].isoformat()
+                return user_dict
+            
+            cur.execute(
+                "INSERT INTO t_p11971418_dog_tinder_project.users (email, password_hash, email_verified) VALUES (%s, %s, %s) RETURNING id, email, name, phone, city, about, avatar_url, created_at",
+                (email, '', True)
+            )
+            new_user = cur.fetchone()
+            conn.commit()
+            user_dict = dict(new_user)
+            if user_dict.get('created_at'):
+                user_dict['created_at'] = user_dict['created_at'].isoformat()
+            return user_dict
+    finally:
+        conn.close()

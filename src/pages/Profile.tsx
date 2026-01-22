@@ -69,16 +69,29 @@ export default function Profile() {
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = reader.result as string;
-        const response = await fetch(PROFILE_API_URL, {
+        const uploadResponse = await fetch(PROFILE_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'upload_avatar', image: base64 }),
         });
-        const data = await response.json();
-        if (data.url && user) {
-          const updatedUser = { ...user, avatar_url: data.url };
-          setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
+        const uploadData = await uploadResponse.json();
+        
+        if (uploadData.url && user) {
+          const updateResponse = await fetch(PROFILE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'update_profile',
+              user_id: user.id,
+              avatar_url: uploadData.url,
+            }),
+          });
+          const updateData = await updateResponse.json();
+          
+          if (updateData.user) {
+            setUser(updateData.user);
+            localStorage.setItem('user', JSON.stringify(updateData.user));
+          }
         }
       };
       reader.readAsDataURL(file);

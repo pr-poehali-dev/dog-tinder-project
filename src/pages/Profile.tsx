@@ -122,10 +122,12 @@ export default function Profile() {
             <p className="text-gray-600">Войдите через Яндекс для продолжения</p>
           </div>
 
-          <YandexLoginButton
-            onClick={yandexAuth.login}
-            isLoading={yandexAuth.isLoading}
-          />
+          <div className="flex justify-center">
+            <YandexLoginButton
+              onClick={yandexAuth.login}
+              isLoading={yandexAuth.isLoading}
+            />
+          </div>
         </div>
       </div>
     </div>

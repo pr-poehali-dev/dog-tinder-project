@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import EmailAuth from '@/components/EmailAuth';
+import YandexLoginButton from '@/components/extensions/yandex-auth/YandexLoginButton';
+import { useYandexAuth } from '@/components/extensions/yandex-auth/useYandexAuth';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+
+const YANDEX_AUTH_URL = 'https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6';
 
 interface User {
   id: number;
@@ -17,6 +21,15 @@ interface User {
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
 
+  const yandexAuth = useYandexAuth({
+    apiUrls: {
+      authUrl: `${YANDEX_AUTH_URL}?action=auth-url`,
+      callback: `${YANDEX_AUTH_URL}?action=callback`,
+      refresh: `${YANDEX_AUTH_URL}?action=refresh`,
+      logout: `${YANDEX_AUTH_URL}?action=logout`,
+    },
+  });
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -24,8 +37,16 @@ export default function Profile() {
     }
   }, []);
 
+  useEffect(() => {
+    if (yandexAuth.isAuthenticated && yandexAuth.user) {
+      localStorage.setItem('user', JSON.stringify(yandexAuth.user));
+      setUser(yandexAuth.user as User);
+    }
+  }, [yandexAuth.isAuthenticated, yandexAuth.user]);
+
   const handleLogout = () => {
     localStorage.removeItem('user');
+    yandexAuth.logout();
     setUser(null);
   };
 
@@ -93,12 +114,28 @@ export default function Profile() {
           </Button>
         </div>
 
-        <EmailAuth onSuccess={() => {
-          const savedUser = localStorage.getItem('user');
-          if (savedUser) {
-            setUser(JSON.parse(savedUser));
-          }
-        }} />
+        <div className="space-y-4">
+          <EmailAuth onSuccess={() => {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+              setUser(JSON.parse(savedUser));
+            }
+          }} />
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">или</span>
+            </div>
+          </div>
+
+          <YandexLoginButton
+            onClick={yandexAuth.login}
+            isLoading={yandexAuth.isLoading}
+          />
+        </div>
       </div>
     </div>
   );

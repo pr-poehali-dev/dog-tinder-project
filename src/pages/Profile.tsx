@@ -1,36 +1,60 @@
 import { useState } from 'react';
-import { useAuth } from '@/components/extensions/auth-email/useAuth';
-import LoginForm from '@/components/extensions/auth-email/LoginForm';
-import RegisterForm from '@/components/extensions/auth-email/RegisterForm';
-import ForgotPasswordForm from '@/components/extensions/auth-email/ForgotPasswordForm';
-import UserProfile from '@/components/extensions/auth-email/UserProfile';
+import EmailAuth from '@/components/EmailAuth';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
-const AUTH_URL = 'https://functions.poehali.dev/b66d2296-9572-4853-b419-769688fe6e4f';
-
-type View = 'login' | 'register' | 'forgot-password';
-
 export default function Profile() {
-  const [view, setView] = useState<View>('login');
+  const [user, setUser] = useState<{ email: string } | null>(null);
 
-  const auth = useAuth({
-    apiUrls: {
-      login: `${AUTH_URL}?action=login`,
-      register: `${AUTH_URL}?action=register`,
-      verifyEmail: `${AUTH_URL}?action=verify-email`,
-      verifyPhone: `${AUTH_URL}?action=verify-phone`,
-      refresh: `${AUTH_URL}?action=refresh`,
-      logout: `${AUTH_URL}?action=logout`,
-      resetPassword: `${AUTH_URL}?action=reset-password`,
-    },
-  });
+  const handleLogout = () => {
+    setUser(null);
+  };
 
-  if (auth.isAuthenticated && auth.user) {
+  if (user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white py-12">
-        <div className="container mx-auto px-4">
-          <UserProfile user={auth.user} onLogout={auth.logout} />
+        <div className="container mx-auto px-4 max-w-2xl">
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-pink-100 rounded-full mb-4">
+                <Icon name="User" size={40} className="text-pink-600" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Личный кабинет</h1>
+              <p className="text-gray-600">{user.email}</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-pink-50 rounded-lg p-6">
+                <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                  <Icon name="CheckCircle" size={20} className="text-green-600" />
+                  Авторизация успешна
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Вы успешно вошли в систему TinDog
+                </p>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="w-full"
+              >
+                <Icon name="LogOut" size={20} />
+                Выйти
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
+            <Button
+              variant="ghost"
+              onClick={() => window.location.href = '/'}
+              className="gap-2"
+            >
+              <Icon name="ArrowLeft" size={20} />
+              На главную
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -50,49 +74,7 @@ export default function Profile() {
           </Button>
         </div>
 
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-pink-600 mb-2">Личный кабинет</h1>
-          <p className="text-gray-600">
-            {view === 'login' && 'Войдите в свой аккаунт'}
-            {view === 'register' && 'Создайте новый аккаунт'}
-            {view === 'forgot-password' && 'Восстановление пароля'}
-          </p>
-        </div>
-
-        {view === 'login' && (
-          <LoginForm
-            onLogin={auth.login}
-            onSuccess={() => window.location.href = '/profile'}
-            onRegisterClick={() => setView('register')}
-            onForgotPasswordClick={() => setView('forgot-password')}
-            error={auth.error}
-            isLoading={auth.isLoading}
-          />
-        )}
-
-        {view === 'register' && (
-          <RegisterForm
-            onRegister={auth.register}
-            onVerifyEmail={auth.verifyEmail}
-            onVerifyPhone={auth.verifyPhone}
-            onLogin={auth.login}
-            onSuccess={() => window.location.href = '/profile'}
-            onLoginClick={() => setView('login')}
-            error={auth.error}
-            isLoading={auth.isLoading}
-          />
-        )}
-
-        {view === 'forgot-password' && (
-          <ForgotPasswordForm
-            onResetPassword={auth.resetPassword}
-            onVerifyEmail={auth.verifyEmail}
-            onVerifyPhone={auth.verifyPhone}
-            onBackClick={() => setView('login')}
-            error={auth.error}
-            isLoading={auth.isLoading}
-          />
-        )}
+        <EmailAuth onSuccess={(email) => setUser({ email })} />
       </div>
     </div>
   );

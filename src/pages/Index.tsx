@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import TinderCard from 'react-tinder-card';
+import { useState, useEffect } from 'react';
+import { useSwipeable } from 'react-swipeable';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,10 +38,8 @@ export default function Index() {
     verifiedOnly: false,
   });
   const [showFilters, setShowFilters] = useState(false);
-  const [lastDirection, setLastDirection] = useState<string>('');
-  
-  const currentIndexRef = useRef(currentIndex);
-  const childRefs = useRef<any[]>([]);
+  const [swipeDirection, setSwipeDirection] = useState<string>('');
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     loadPets();
@@ -51,17 +49,13 @@ export default function Index() {
     applyFilters();
   }, [filters, pets]);
 
-  useEffect(() => {
-    currentIndexRef.current = currentIndex;
-  }, [currentIndex]);
-
   const loadPets = async () => {
     setIsLoading(true);
     try {
       const response = await fetch(PETS_API_URL);
       const data = await response.json();
       setPets(data);
-      setCurrentIndex(data.length - 1);
+      setCurrentIndex(0);
     } catch (error) {
       console.error('Failed to load pets:', error);
     } finally {
@@ -103,8 +97,7 @@ export default function Index() {
     }
 
     setFilteredPets(filtered);
-    setCurrentIndex(filtered.length - 1);
-    childRefs.current = Array(filtered.length).fill(0).map((_, i) => childRefs.current[i] || null);
+    setCurrentIndex(0);
   };
 
   const resetFilters = () => {
@@ -118,18 +111,28 @@ export default function Index() {
     });
   };
 
-  const swiped = (direction: string, index: number) => {
-    setLastDirection(direction);
-    setCurrentIndex(index - 1);
+  const handleSwipe = (direction: 'left' | 'right') => {
+    if (isAnimating || currentIndex >= filteredPets.length) return;
+    
+    setIsAnimating(true);
+    setSwipeDirection(direction);
+    
+    setTimeout(() => {
+      setCurrentIndex(currentIndex + 1);
+      setSwipeDirection('');
+      setIsAnimating(false);
+    }, 300);
   };
 
-  const swipe = async (dir: string) => {
-    if (currentIndex >= 0 && currentIndex < filteredPets.length) {
-      await childRefs.current[currentIndex]?.swipe(dir);
-    }
-  };
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => handleSwipe('left'),
+    onSwipedRight: () => handleSwipe('right'),
+    trackMouse: true,
+    preventScrollOnSwipe: true,
+  });
 
-  const canSwipe = currentIndex >= 0;
+  const currentPet = filteredPets[currentIndex];
+  const canSwipe = currentIndex < filteredPets.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white">
@@ -265,111 +268,110 @@ export default function Index() {
               Добавить питомца
             </Button>
           </div>
+        ) : !canSwipe ? (
+          <div className="text-center py-20">
+            <Icon name="Heart" size={64} className="mx-auto mb-4 text-pink-300" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Питомцы закончились!</h2>
+            <p className="text-gray-600 mb-4">Попробуйте изменить фильтры или вернитесь позже</p>
+            <Button onClick={resetFilters}>
+              Сбросить фильтры
+            </Button>
+          </div>
         ) : (
           <>
-            <div className="relative w-full max-w-md h-[600px] mb-8">
-              {filteredPets.map((pet, index) => (
-                <TinderCard
-                  ref={(el) => (childRefs.current[index] = el)}
-                  key={pet.id}
-                  onSwipe={(dir) => swiped(dir, index)}
-                  preventSwipe={['up', 'down']}
-                  className="absolute w-full h-full"
-                >
-                  <div className="relative w-full h-full bg-white rounded-2xl shadow-2xl overflow-hidden">
-                    {pet.photo_url ? (
-                      <img
-                        src={pet.photo_url}
-                        alt={pet.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-pink-200 to-orange-200 flex items-center justify-center">
-                        <Icon name="Dog" size={120} className="text-white opacity-50" />
-                      </div>
-                    )}
+            <div 
+              {...swipeHandlers}
+              className="relative w-full max-w-md h-[600px] mb-8 cursor-grab active:cursor-grabbing"
+            >
+              <div
+                className={`w-full h-full transition-all duration-300 ${
+                  swipeDirection === 'left' 
+                    ? '-translate-x-[150%] rotate-[-30deg]' 
+                    : swipeDirection === 'right'
+                    ? 'translate-x-[150%] rotate-[30deg]'
+                    : 'translate-x-0 rotate-0'
+                }`}
+              >
+                <div className="relative w-full h-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+                  {currentPet?.photo_url ? (
+                    <img
+                      src={currentPet.photo_url}
+                      alt={currentPet.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-pink-200 to-orange-200 flex items-center justify-center">
+                      <Icon name="Dog" size={120} className="text-white opacity-50" />
+                    </div>
+                  )}
+                  
+                  {currentPet?.verification_paid && (
+                    <Badge className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1">
+                      <Icon name="ShieldCheck" size={16} className="mr-1" />
+                      Проверен
+                    </Badge>
+                  )}
+
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-6 text-white">
+                    <h2 className="text-3xl font-bold mb-2">
+                      {currentPet?.name}
+                      {currentPet?.age && `, ${currentPet.age}`}
+                    </h2>
                     
-                    {pet.verification_paid && (
-                      <Badge className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1">
-                        <Icon name="ShieldCheck" size={16} className="mr-1" />
-                        Проверен
-                      </Badge>
+                    {currentPet?.breed && (
+                      <p className="text-lg mb-2">{currentPet.breed}</p>
                     )}
 
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-6 text-white">
-                      <h2 className="text-3xl font-bold mb-2">
-                        {pet.name}
-                        {pet.age && `, ${pet.age}`}
-                      </h2>
-                      
-                      {pet.breed && (
-                        <p className="text-lg mb-2">{pet.breed}</p>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {currentPet?.gender && (
+                        <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                          {currentPet.gender === 'male' ? '🐕 Кобель' : '🐕 Сука'}
+                        </Badge>
                       )}
-
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {pet.gender && (
-                          <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                            {pet.gender === 'male' ? '🐕 Кобель' : '🐕 Сука'}
-                          </Badge>
-                        )}
-                        {pet.rank && (
-                          <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                            🏆 {pet.rank}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {(pet.city || pet.owner_city) && (
-                        <div className="flex items-center gap-1 text-sm mb-2">
-                          <Icon name="MapPin" size={16} />
-                          <span>{pet.city || pet.owner_city}</span>
-                        </div>
-                      )}
-
-                      {pet.description && (
-                        <p className="text-sm text-white/90 line-clamp-2">{pet.description}</p>
+                      {currentPet?.rank && (
+                        <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                          🏆 {currentPet.rank}
+                        </Badge>
                       )}
                     </div>
-                  </div>
-                </TinderCard>
-              ))}
 
-              {currentIndex < 0 && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white rounded-2xl shadow-2xl">
-                  <div className="text-center p-8">
-                    <Icon name="Heart" size={64} className="mx-auto mb-4 text-pink-300" />
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Питомцы закончились!</h2>
-                    <p className="text-gray-600 mb-4">Попробуйте изменить фильтры или вернитесь позже</p>
-                    <Button onClick={resetFilters}>
-                      Сбросить фильтры
-                    </Button>
+                    {(currentPet?.city || currentPet?.owner_city) && (
+                      <div className="flex items-center gap-1 text-sm mb-2">
+                        <Icon name="MapPin" size={16} />
+                        <span>{currentPet?.city || currentPet?.owner_city}</span>
+                      </div>
+                    )}
+
+                    {currentPet?.description && (
+                      <p className="text-sm text-white/90 line-clamp-2">{currentPet.description}</p>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="flex gap-6 items-center justify-center">
               <button
-                onClick={() => swipe('left')}
-                disabled={!canSwipe}
+                onClick={() => handleSwipe('left')}
+                disabled={isAnimating}
                 className="w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform disabled:opacity-50 disabled:hover:scale-100"
               >
                 <Icon name="X" size={32} className="text-red-500" />
               </button>
 
               <button
-                onClick={() => swipe('right')}
-                disabled={!canSwipe}
+                onClick={() => handleSwipe('right')}
+                disabled={isAnimating}
                 className="w-20 h-20 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 shadow-xl flex items-center justify-center hover:scale-110 transition-transform disabled:opacity-50 disabled:hover:scale-100"
               >
                 <Icon name="Heart" size={40} className="text-white" />
               </button>
             </div>
 
-            {lastDirection && (
+            {swipeDirection && (
               <div className="mt-4 text-center">
                 <p className="text-gray-600">
-                  {lastDirection === 'right' ? '💚 Нравится!' : '❌ Пропущено'}
+                  {swipeDirection === 'right' ? '💚 Нравится!' : '❌ Пропущено'}
                 </p>
               </div>
             )}

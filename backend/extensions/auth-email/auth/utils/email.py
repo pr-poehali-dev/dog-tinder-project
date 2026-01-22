@@ -17,7 +17,7 @@ def generate_code() -> str:
 
 
 def send_email(to_email: str, subject: str, html_body: str, text_body: str) -> bool:
-    """Send email via SMTP (Gmail by default)."""
+    """Send email via SMTP (Yandex/Gmail)."""
     smtp_host = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
     smtp_port = int(os.environ.get('SMTP_PORT', '587'))
     smtp_user = os.environ.get('SMTP_USER', '')
@@ -25,7 +25,8 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str) -> b
     smtp_from = os.environ.get('SMTP_FROM', smtp_user)
 
     print(f"[EMAIL] Попытка отправки на {to_email}")
-    print(f"[EMAIL] SMTP_USER: {smtp_user[:5]}*** (скрыто)")
+    print(f"[EMAIL] SMTP_HOST: {smtp_host}")
+    print(f"[EMAIL] SMTP_USER: {smtp_user[:5] if smtp_user else 'НЕТ'}*** (скрыто)")
     print(f"[EMAIL] SMTP_PASSWORD: {'установлен' if smtp_password else 'НЕ УСТАНОВЛЕН'}")
 
     if not smtp_user or not smtp_password:

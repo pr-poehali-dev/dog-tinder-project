@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import EmailAuth from '@/components/EmailAuth';
 import YandexLoginButton from '@/components/extensions/yandex-auth/YandexLoginButton';
 import { useYandexAuth } from '@/components/extensions/yandex-auth/useYandexAuth';
 import { Button } from '@/components/ui/button';
@@ -114,21 +113,13 @@ export default function Profile() {
           </Button>
         </div>
 
-        <div className="space-y-4">
-          <EmailAuth onSuccess={() => {
-            const savedUser = localStorage.getItem('user');
-            if (savedUser) {
-              setUser(JSON.parse(savedUser));
-            }
-          }} />
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-pink-100 rounded-full mb-4">
+              <Icon name="Heart" size={32} className="text-pink-600" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">или</span>
-            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Вход в TinDog</h2>
+            <p className="text-gray-600">Войдите через Яндекс для продолжения</p>
           </div>
 
           <YandexLoginButton

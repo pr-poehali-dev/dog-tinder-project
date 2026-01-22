@@ -19,11 +19,13 @@ export default function YandexCallback() {
     const code = params.get('code');
 
     if (code && yandexAuth.handleCallback) {
-      yandexAuth.handleCallback(code).then(() => {
-        window.location.href = '/profile';
+      yandexAuth.handleCallback(params).then((success) => {
+        if (success) {
+          window.location.href = '/profile';
+        }
       });
     }
-  }, []);
+  }, [yandexAuth]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white flex items-center justify-center">

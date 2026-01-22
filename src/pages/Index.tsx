@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import TinderCard from 'react-tinder-card';
 import Icon from '@/components/ui/icon';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -27,6 +27,7 @@ interface Pet {
 export default function Index() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [filteredPets, setFilteredPets] = useState<Pet[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     city: '',
@@ -37,6 +38,10 @@ export default function Index() {
     verifiedOnly: false,
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [lastDirection, setLastDirection] = useState<string>('');
+  
+  const currentIndexRef = useRef(currentIndex);
+  const childRefs = useRef<any[]>([]);
 
   useEffect(() => {
     loadPets();
@@ -46,12 +51,17 @@ export default function Index() {
     applyFilters();
   }, [filters, pets]);
 
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
   const loadPets = async () => {
     setIsLoading(true);
     try {
       const response = await fetch(PETS_API_URL);
       const data = await response.json();
       setPets(data);
+      setCurrentIndex(data.length - 1);
     } catch (error) {
       console.error('Failed to load pets:', error);
     } finally {
@@ -93,6 +103,8 @@ export default function Index() {
     }
 
     setFilteredPets(filtered);
+    setCurrentIndex(filtered.length - 1);
+    childRefs.current = Array(filtered.length).fill(0).map((_, i) => childRefs.current[i] || null);
   };
 
   const resetFilters = () => {
@@ -105,6 +117,19 @@ export default function Index() {
       verifiedOnly: false,
     });
   };
+
+  const swiped = (direction: string, index: number) => {
+    setLastDirection(direction);
+    setCurrentIndex(index - 1);
+  };
+
+  const swipe = async (dir: string) => {
+    if (currentIndex >= 0 && currentIndex < filteredPets.length) {
+      await childRefs.current[currentIndex]?.swipe(dir);
+    }
+  };
+
+  const canSwipe = currentIndex >= 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white">
@@ -225,97 +250,134 @@ export default function Index() {
         </div>
       )}
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         {isLoading ? (
           <div className="text-center py-20">
             <Icon name="Loader2" size={48} className="animate-spin text-pink-600 mx-auto" />
-            <p className="text-gray-600 mt-4">Загрузка объявлений...</p>
+            <p className="text-gray-600 mt-4">Загрузка питомцев...</p>
           </div>
         ) : filteredPets.length === 0 ? (
           <div className="text-center py-20">
             <Icon name="Dog" size={64} className="mx-auto mb-4 text-gray-300" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Нет объявлений</h2>
-            <p className="text-gray-600">Попробуйте изменить фильтры или добавьте своего питомца</p>
-            <Button onClick={() => (window.location.href = '/profile')} className="mt-4">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Нет питомцев</h2>
+            <p className="text-gray-600 mb-4">Попробуйте изменить фильтры или добавьте своего питомца</p>
+            <Button onClick={() => (window.location.href = '/profile')}>
               Добавить питомца
             </Button>
           </div>
         ) : (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Найдено объявлений: {filteredPets.length}
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredPets.map((pet) => (
-                <Card
+          <>
+            <div className="relative w-full max-w-md h-[600px] mb-8">
+              {filteredPets.map((pet, index) => (
+                <TinderCard
+                  ref={(el) => (childRefs.current[index] = el)}
                   key={pet.id}
-                  className="overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
+                  onSwipe={(dir) => swiped(dir, index)}
+                  preventSwipe={['up', 'down']}
+                  className="absolute w-full h-full"
                 >
-                  <div className="relative">
+                  <div className="relative w-full h-full bg-white rounded-2xl shadow-2xl overflow-hidden">
                     {pet.photo_url ? (
                       <img
                         src={pet.photo_url}
                         alt={pet.name}
-                        className="w-full h-64 object-cover"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-64 bg-pink-100 flex items-center justify-center">
-                        <Icon name="Dog" size={64} className="text-pink-400" />
+                      <div className="w-full h-full bg-gradient-to-br from-pink-200 to-orange-200 flex items-center justify-center">
+                        <Icon name="Dog" size={120} className="text-white opacity-50" />
                       </div>
                     )}
+                    
                     {pet.verification_paid && (
-                      <Badge className="absolute top-2 right-2 bg-green-500 text-white">
-                        <Icon name="ShieldCheck" size={14} className="mr-1" />
+                      <Badge className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1">
+                        <Icon name="ShieldCheck" size={16} className="mr-1" />
                         Проверен
                       </Badge>
                     )}
-                  </div>
 
-                  <div className="p-4">
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">
-                      {pet.name}
-                      {pet.age && `, ${pet.age} ${pet.age === 1 ? 'год' : pet.age < 5 ? 'года' : 'лет'}`}
-                    </h3>
-
-                    {pet.breed && (
-                      <p className="text-sm text-gray-600 mb-2">{pet.breed}</p>
-                    )}
-
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {pet.gender && (
-                        <Badge variant="secondary" className="text-xs">
-                          {pet.gender === 'male' ? 'Кобель' : 'Сука'}
-                        </Badge>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-6 text-white">
+                      <h2 className="text-3xl font-bold mb-2">
+                        {pet.name}
+                        {pet.age && `, ${pet.age}`}
+                      </h2>
+                      
+                      {pet.breed && (
+                        <p className="text-lg mb-2">{pet.breed}</p>
                       )}
-                      {pet.rank && (
-                        <Badge variant="secondary" className="text-xs">
-                          {pet.rank}
-                        </Badge>
+
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {pet.gender && (
+                          <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                            {pet.gender === 'male' ? '🐕 Кобель' : '🐕 Сука'}
+                          </Badge>
+                        )}
+                        {pet.rank && (
+                          <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                            🏆 {pet.rank}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {(pet.city || pet.owner_city) && (
+                        <div className="flex items-center gap-1 text-sm mb-2">
+                          <Icon name="MapPin" size={16} />
+                          <span>{pet.city || pet.owner_city}</span>
+                        </div>
+                      )}
+
+                      {pet.description && (
+                        <p className="text-sm text-white/90 line-clamp-2">{pet.description}</p>
                       )}
                     </div>
-
-                    {(pet.city || pet.owner_city) && (
-                      <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                        <Icon name="MapPin" size={14} />
-                        <span>{pet.city || pet.owner_city}</span>
-                      </div>
-                    )}
-
-                    {pet.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{pet.description}</p>
-                    )}
                   </div>
-                </Card>
+                </TinderCard>
               ))}
+
+              {currentIndex < 0 && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white rounded-2xl shadow-2xl">
+                  <div className="text-center p-8">
+                    <Icon name="Heart" size={64} className="mx-auto mb-4 text-pink-300" />
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Питомцы закончились!</h2>
+                    <p className="text-gray-600 mb-4">Попробуйте изменить фильтры или вернитесь позже</p>
+                    <Button onClick={resetFilters}>
+                      Сбросить фильтры
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+
+            <div className="flex gap-6 items-center justify-center">
+              <button
+                onClick={() => swipe('left')}
+                disabled={!canSwipe}
+                className="w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center hover:scale-110 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+              >
+                <Icon name="X" size={32} className="text-red-500" />
+              </button>
+
+              <button
+                onClick={() => swipe('right')}
+                disabled={!canSwipe}
+                className="w-20 h-20 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 shadow-xl flex items-center justify-center hover:scale-110 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+              >
+                <Icon name="Heart" size={40} className="text-white" />
+              </button>
+            </div>
+
+            {lastDirection && (
+              <div className="mt-4 text-center">
+                <p className="text-gray-600">
+                  {lastDirection === 'right' ? '💚 Нравится!' : '❌ Пропущено'}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </main>
 
-      <footer className="bg-white border-t mt-12">
+      <footer className="bg-white border-t mt-auto">
         <div className="container mx-auto px-4 py-6 text-center text-gray-600">
           <p>© 2024 TinDog. Найди друга для своего питомца 🐾</p>
         </div>

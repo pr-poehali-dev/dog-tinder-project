@@ -24,7 +24,12 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str) -> b
     smtp_password = os.environ.get('SMTP_PASSWORD', '')
     smtp_from = os.environ.get('SMTP_FROM', smtp_user)
 
+    print(f"[EMAIL] Попытка отправки на {to_email}")
+    print(f"[EMAIL] SMTP_USER: {smtp_user[:5]}*** (скрыто)")
+    print(f"[EMAIL] SMTP_PASSWORD: {'установлен' if smtp_password else 'НЕ УСТАНОВЛЕН'}")
+
     if not smtp_user or not smtp_password:
+        print("[EMAIL] ОШИБКА: SMTP_USER или SMTP_PASSWORD не установлены")
         return False
 
     msg = MIMEMultipart('alternative')
@@ -36,12 +41,20 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str) -> b
     msg.attach(MIMEText(html_body, 'html', 'utf-8'))
 
     try:
+        print(f"[EMAIL] Подключение к {smtp_host}:{smtp_port}")
         with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
             server.starttls()
+            print("[EMAIL] TLS включен")
             server.login(smtp_user, smtp_password)
+            print("[EMAIL] Авторизация успешна")
             server.sendmail(smtp_from, to_email, msg.as_string())
+            print("[EMAIL] ✅ Письмо отправлено успешно")
         return True
-    except (smtplib.SMTPException, OSError):
+    except smtplib.SMTPException as e:
+        print(f"[EMAIL] ❌ SMTP ошибка: {str(e)}")
+        return False
+    except OSError as e:
+        print(f"[EMAIL] ❌ Сетевая ошибка: {str(e)}")
         return False
 
 

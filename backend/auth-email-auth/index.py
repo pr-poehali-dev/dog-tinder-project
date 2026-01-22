@@ -7,9 +7,12 @@ import secrets
 import time
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import boto3
+import base64
+import uuid
 
 def handler(event: dict, context) -> dict:
-    """API для авторизации через email с кодом подтверждения"""
+    """API для авторизации через email, обновления профиля и загрузки аватара"""
     
     method = event.get('httpMethod', 'GET')
     
@@ -21,7 +24,8 @@ def handler(event: dict, context) -> dict:
                 'Access-Control-Allow-Methods': 'POST, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type'
             },
-            'body': ''
+            'body': '',
+            'isBase64Encoded': False
         }
     
     if method == 'POST':
@@ -32,11 +36,16 @@ def handler(event: dict, context) -> dict:
             return send_verification_code(body)
         elif action == 'verify_code':
             return verify_code(body)
+        elif action == 'update_profile':
+            return update_profile(body)
+        elif action == 'upload_avatar':
+            return upload_avatar(body)
     
     return {
         'statusCode': 405,
         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'error': 'Method not allowed'})
+        'body': json.dumps({'error': 'Method not allowed'}),
+        'isBase64Encoded': False
     }
 
 
@@ -130,7 +139,8 @@ def verify_code(body: dict) -> dict:
             'success': True,
             'user': user,
             'authenticated': True
-        })
+        }),
+        'isBase64Encoded': False
     }
 
 
@@ -171,3 +181,126 @@ def get_or_create_user(email: str) -> dict:
             return user_dict
     finally:
         conn.close()
+
+
+def update_profile(body: dict) -> dict:
+    """Обновление профиля пользователя"""
+    
+    user_id = body.get('user_id')
+    name = body.get('name')
+    city = body.get('city')
+    avatar_url = body.get('avatar_url')
+    
+    if not user_id:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'user_id is required'}),
+            'isBase64Encoded': False
+        }
+    
+    database_url = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(database_url)
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            update_fields = []
+            update_values = []
+            
+            if name is not None:
+                update_fields.append("name = %s")
+                update_values.append(name)
+            
+            if city is not None:
+                update_fields.append("city = %s")
+                update_values.append(city)
+            
+            if avatar_url is not None:
+                update_fields.append("avatar_url = %s")
+                update_values.append(avatar_url)
+            
+            if not update_fields:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'No fields to update'}),
+                    'isBase64Encoded': False
+                }
+            
+            update_values.append(user_id)
+            
+            query = f"UPDATE t_p11971418_dog_tinder_project.users SET {', '.join(update_fields)} WHERE id = %s RETURNING id, email, name, phone, city, about, avatar_url, created_at"
+            
+            cur.execute(query, update_values)
+            updated_user = cur.fetchone()
+            conn.commit()
+            
+            if not updated_user:
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'User not found'}),
+                    'isBase64Encoded': False
+                }
+            
+            user_dict = dict(updated_user)
+            if user_dict.get('created_at'):
+                user_dict['created_at'] = user_dict['created_at'].isoformat()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'success': True,
+                    'user': user_dict
+                }),
+                'isBase64Encoded': False
+            }
+    finally:
+        conn.close()
+
+
+def upload_avatar(body: dict) -> dict:
+    """Загрузка аватара в S3"""
+    
+    image_base64 = body.get('image')
+    
+    if not image_base64:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Image data is required'}),
+            'isBase64Encoded': False
+        }
+    
+    if ',' in image_base64:
+        image_base64 = image_base64.split(',')[1]
+    
+    image_data = base64.b64decode(image_base64)
+    
+    file_name = f"avatars/{uuid.uuid4()}.jpg"
+    
+    s3 = boto3.client('s3',
+        endpoint_url='https://bucket.poehali.dev',
+        aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+    )
+    
+    s3.put_object(
+        Bucket='files',
+        Key=file_name,
+        Body=image_data,
+        ContentType='image/jpeg'
+    )
+    
+    cdn_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{file_name}"
+    
+    return {
+        'statusCode': 200,
+        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+        'body': json.dumps({
+            'success': True,
+            'url': cdn_url
+        }),
+        'isBase64Encoded': False
+    }

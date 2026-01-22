@@ -1,38 +1,29 @@
 {
   "tests": [
     {
-      "name": "Send verification code",
+      "name": "Update profile - missing user_id",
       "method": "POST",
       "path": "/",
       "body": {
-        "action": "send_code",
-        "email": "test@example.com"
+        "action": "update_profile",
+        "name": "Test User"
       },
-      "expectedStatus": 200,
+      "expectedStatus": 400,
       "expectedBody": {
-        "success": true,
-        "code": "string",
-        "expires_at": "number"
-      },
-      "bodyMatcher": "partial"
+        "error": "user_id is required"
+      }
     },
     {
-      "name": "Verify correct code",
+      "name": "Upload avatar - missing image",
       "method": "POST",
       "path": "/",
       "body": {
-        "action": "verify_code",
-        "email": "test@example.com",
-        "code": "123456",
-        "expected_code": "123456",
-        "expires_at": 9999999999
+        "action": "upload_avatar"
       },
-      "expectedStatus": 200,
+      "expectedStatus": 400,
       "expectedBody": {
-        "success": true,
-        "authenticated": true
-      },
-      "bodyMatcher": "partial"
+        "error": "Image data is required"
+      }
     }
   ]
 }

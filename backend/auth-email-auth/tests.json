@@ -1,0 +1,38 @@
+{
+  "tests": [
+    {
+      "name": "Send verification code",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "send_code",
+        "email": "test@example.com"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "code": "string",
+        "expires_at": "number"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Verify correct code",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "verify_code",
+        "email": "test@example.com",
+        "code": "123456",
+        "expected_code": "123456",
+        "expires_at": 9999999999
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "authenticated": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

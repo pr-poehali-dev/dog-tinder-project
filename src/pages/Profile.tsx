@@ -24,6 +24,7 @@ export default function Profile() {
   const [editForm, setEditForm] = useState({ name: '', city: '' });
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
 
   const yandexAuth = useYandexAuth({
     apiUrls: {
@@ -130,6 +131,33 @@ export default function Profile() {
     }
   };
 
+  const handleDeleteAvatar = async () => {
+    if (!user) return;
+
+    setIsUploading(true);
+    try {
+      const response = await fetch(PROFILE_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_profile',
+          user_id: user.id,
+          avatar_url: null,
+        }),
+      });
+      const data = await response.json();
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setShowAvatarMenu(false);
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white py-12">
@@ -144,10 +172,32 @@ export default function Profile() {
                     <Icon name="User" size={40} className="text-pink-600" />
                   </div>
                 )}
-                <label className="absolute bottom-0 right-0 bg-pink-600 text-white p-2 rounded-full cursor-pointer hover:bg-pink-700 transition-colors">
+                <button
+                  onClick={() => setShowAvatarMenu(!showAvatarMenu)}
+                  className="absolute bottom-0 right-0 bg-pink-600 text-white p-2 rounded-full hover:bg-pink-700 transition-colors"
+                >
                   <Icon name={isUploading ? "Loader2" : "Camera"} size={16} className={isUploading ? "animate-spin" : ""} />
-                  <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                </label>
+                </button>
+                {showAvatarMenu && (
+                  <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-10">
+                    <label className="block px-4 py-2 hover:bg-gray-50 cursor-pointer">
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                        <Icon name="Upload" size={16} />
+                        Загрузить фото
+                      </div>
+                      <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                    </label>
+                    {user.avatar_url && (
+                      <button
+                        onClick={handleDeleteAvatar}
+                        className="w-full px-4 py-2 hover:bg-gray-50 text-left flex items-center gap-2 text-sm text-red-600"
+                      >
+                        <Icon name="Trash2" size={16} />
+                        Удалить фото
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Личный кабинет</h1>
               <p className="text-gray-600">{user.email}</p>

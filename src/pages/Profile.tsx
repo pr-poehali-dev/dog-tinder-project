@@ -378,19 +378,19 @@ export default function Profile() {
             </Button>
           </div>
         </div>
+
+        {showPetForm && (
+          <PetForm
+            userId={user.id}
+            onSuccess={() => {
+              setShowPetForm(false);
+              loadPets();
+            }}
+            onCancel={() => setShowPetForm(false)}
+          />
+        )}
       </div>
-      {showPetForm && (
-        <PetForm
-          userId={user.id}
-          onSuccess={() => {
-            setShowPetForm(false);
-            loadPets();
-          }}
-          onCancel={() => setShowPetForm(false)}
-        />
-      )}
-    </div>
-  );
+    );
   }
 
   return (

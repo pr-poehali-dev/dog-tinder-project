@@ -38,6 +38,9 @@ export default function Index() {
     gender: '',
     breed: '',
     rank: '',
+    minAge: 0,
+    maxAge: 15,
+    maxDistance: 100,
   });
   const [showFilters, setShowFilters] = useState(false);
   const { counts } = useNotifications(user?.id || null);
@@ -162,6 +165,13 @@ export default function Index() {
       );
     }
 
+    if (filters.minAge > 0 || filters.maxAge < 15) {
+      filtered = filtered.filter((pet) => {
+        if (!pet.age) return false;
+        return pet.age >= filters.minAge && pet.age <= filters.maxAge;
+      });
+    }
+
     setFilteredPets(filtered);
   };
 
@@ -171,6 +181,9 @@ export default function Index() {
       gender: '',
       breed: '',
       rank: '',
+      minAge: 0,
+      maxAge: 15,
+      maxDistance: 100,
     });
   };
 
@@ -259,6 +272,47 @@ export default function Index() {
                   onChange={(e) => setFilters({ ...filters, rank: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   placeholder="Чемпион"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Возраст: {filters.minAge} - {filters.maxAge} лет
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max="15"
+                    value={filters.minAge}
+                    onChange={(e) => setFilters({ ...filters, minAge: Number(e.target.value) })}
+                    className="flex-1"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="15"
+                    value={filters.maxAge}
+                    onChange={(e) => setFilters({ ...filters, maxAge: Number(e.target.value) })}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Расстояние: до {filters.maxDistance} км
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="500"
+                  step="10"
+                  value={filters.maxDistance}
+                  onChange={(e) => setFilters({ ...filters, maxDistance: Number(e.target.value) })}
+                  className="w-full"
                 />
               </div>
             </div>

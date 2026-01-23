@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
 
@@ -43,6 +44,7 @@ export default function Chats() {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const { refresh } = useNotifications(user?.id || null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -52,6 +54,17 @@ export default function Chats() {
       loadChats(userData.id);
     }
   }, []);
+
+  useEffect(() => {
+    if (!selectedChat) return;
+
+    const interval = setInterval(() => {
+      loadMessages(selectedChat.chat_id);
+      refresh();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [selectedChat, refresh]);
 
   const loadChats = async (userId: number) => {
     setIsLoading(true);

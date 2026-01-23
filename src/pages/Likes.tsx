@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
 
@@ -54,6 +55,7 @@ export default function Likes() {
   const [incomingLikes, setIncomingLikes] = useState<IncomingLike[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { markAsRead, counts } = useNotifications(user?.id || null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -61,8 +63,9 @@ export default function Likes() {
       const userData = JSON.parse(savedUser);
       setUser(userData);
       loadLikes(userData.id);
+      markAsRead();
     }
-  }, []);
+  }, [markAsRead]);
 
   const loadLikes = async (userId: number) => {
     setIsLoading(true);

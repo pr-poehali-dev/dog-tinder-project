@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useNotifications } from '@/hooks/useNotifications';
+import { requestNotificationPermission } from '@/utils/notifications';
 
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
 const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
@@ -38,6 +40,7 @@ export default function Index() {
     rank: '',
   });
   const [showFilters, setShowFilters] = useState(false);
+  const { counts } = useNotifications(user?.id || null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -46,6 +49,7 @@ export default function Index() {
       setUser(userData);
       loadMyPet(userData.id);
       loadMyLikes(userData.id);
+      requestNotificationPermission();
     }
     loadPets();
   }, []);
@@ -184,11 +188,21 @@ export default function Index() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={() => (window.location.href = '/likes')}>
+              <Button variant="ghost" className="relative" onClick={() => (window.location.href = '/likes')}>
                 <Icon name="Heart" size={24} />
+                {(counts.newLikes > 0 || counts.newMatches > 0) && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {counts.newLikes + counts.newMatches}
+                  </span>
+                )}
               </Button>
-              <Button variant="ghost" onClick={() => (window.location.href = '/chats')}>
+              <Button variant="ghost" className="relative" onClick={() => (window.location.href = '/chats')}>
                 <Icon name="MessageCircle" size={24} />
+                {counts.unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {counts.unreadMessages}
+                  </span>
+                )}
               </Button>
               <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>
                 <Icon name="User" size={24} />

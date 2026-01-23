@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNotifications } from '@/hooks/useNotifications';
 import { requestNotificationPermission } from '@/utils/notifications';
+import SwipeCard from '@/components/SwipeCard';
 
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
 const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
@@ -43,6 +44,8 @@ export default function Index() {
     maxDistance: 100,
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('swipe');
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const { counts } = useNotifications(user?.id || null);
 
   useEffect(() => {
@@ -120,6 +123,24 @@ export default function Index() {
       console.error('Failed to unlike:', error);
     }
   };
+
+  const handleSwipeLeft = (petId: number) => {
+    setCurrentCardIndex(prev => prev + 1);
+  };
+
+  const handleSwipeRight = async (petId: number) => {
+    await handleLike(petId);
+    setCurrentCardIndex(prev => prev + 1);
+  };
+
+  const getDisplayedPets = () => {
+    if (!user || !myPetId) return filteredPets;
+    return filteredPets.filter(pet => pet.id !== myPetId);
+  };
+
+  const displayedPets = getDisplayedPets();
+  const currentCard = displayedPets[currentCardIndex];
+  const nextCards = displayedPets.slice(currentCardIndex + 1, currentCardIndex + 3);
 
   useEffect(() => {
     applyFilters();
@@ -330,7 +351,7 @@ export default function Index() {
       )}
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
@@ -339,13 +360,32 @@ export default function Index() {
             <Icon name="SlidersHorizontal" size={20} />
             Фильтры
           </Button>
+          
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'swipe' ? 'default' : 'outline'}
+              onClick={() => setViewMode('swipe')}
+              className="gap-2"
+            >
+              <Icon name="Layers" size={20} />
+              Свайпы
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              onClick={() => setViewMode('grid')}
+              className="gap-2"
+            >
+              <Icon name="Grid3x3" size={20} />
+              Сетка
+            </Button>
+          </div>
         </div>
         {isLoading ? (
           <div className="text-center py-20">
             <Icon name="Loader2" size={48} className="animate-spin text-pink-600 mx-auto" />
             <p className="text-gray-600 mt-4">Загрузка питомцев...</p>
           </div>
-        ) : filteredPets.length === 0 ? (
+        ) : displayedPets.length === 0 ? (
           <div className="text-center py-20">
             <Icon name="Dog" size={64} className="mx-auto mb-4 text-gray-300" />
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Нет питомцев</h2>
@@ -353,6 +393,76 @@ export default function Index() {
             <Button onClick={() => (window.location.href = '/profile')}>
               Добавить питомца
             </Button>
+          </div>
+        ) : viewMode === 'swipe' ? (
+          <div className="flex flex-col items-center">
+            {currentCardIndex >= displayedPets.length ? (
+              <div className="text-center py-20">
+                <Icon name="CheckCircle" size={64} className="mx-auto mb-4 text-green-500" />
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Вы просмотрели всех!</h2>
+                <p className="text-gray-600 mb-4">Попробуйте изменить фильтры или зайдите позже</p>
+                <Button onClick={() => setCurrentCardIndex(0)}>
+                  Начать сначала
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="relative w-full max-w-sm h-[600px] mb-8">
+                  {nextCards.map((pet, index) => (
+                    <div
+                      key={pet.id}
+                      className="absolute top-0 left-0 w-full pointer-events-none"
+                      style={{
+                        transform: `scale(${1 - index * 0.05}) translateY(${index * 10}px)`,
+                        zIndex: 10 - index,
+                        opacity: 1 - index * 0.3,
+                      }}
+                    >
+                      <SwipeCard
+                        pet={pet}
+                        onSwipeLeft={handleSwipeLeft}
+                        onSwipeRight={handleSwipeRight}
+                      />
+                    </div>
+                  )).reverse()}
+                  
+                  {currentCard && (
+                    <SwipeCard
+                      pet={currentCard}
+                      onSwipeLeft={handleSwipeLeft}
+                      onSwipeRight={handleSwipeRight}
+                      style={{ zIndex: 20 }}
+                    />
+                  )}
+                </div>
+
+                <div className="flex gap-6 items-center justify-center">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-16 h-16 rounded-full border-2 border-red-500 text-red-500 hover:bg-red-50"
+                    onClick={() => currentCard && handleSwipeLeft(currentCard.id)}
+                  >
+                    <Icon name="X" size={32} />
+                  </Button>
+                  
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-20 h-20 rounded-full border-2 border-green-500 text-green-500 hover:bg-green-50"
+                    onClick={() => currentCard && handleSwipeRight(currentCard.id)}
+                  >
+                    <Icon name="Heart" size={36} />
+                  </Button>
+                </div>
+
+                <div className="mt-6 text-center">
+                  <p className="text-sm text-gray-500">
+                    {currentCardIndex + 1} / {displayedPets.length}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

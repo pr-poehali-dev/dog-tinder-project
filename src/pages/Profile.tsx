@@ -3,11 +3,9 @@ import YandexLoginButton from '@/components/extensions/yandex-auth/YandexLoginBu
 import { useYandexAuth } from '@/components/extensions/yandex-auth/useYandexAuth';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import PetForm from '@/components/PetForm';
 
 const YANDEX_AUTH_URL = 'https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6';
 const PROFILE_API_URL = 'https://functions.poehali.dev/b66d2296-9572-4853-b419-769688fe6e4f';
-const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
 
 interface User {
   id: number;
@@ -20,22 +18,6 @@ interface User {
   created_at?: string;
 }
 
-interface Pet {
-  id: number;
-  user_id: number;
-  name: string;
-  breed?: string;
-  age?: number;
-  gender?: string;
-  rank?: string;
-  city?: string;
-  description?: string;
-  photo_url?: string;
-  verification_paid?: boolean;
-  passport_verified?: boolean;
-  created_at?: string;
-}
-
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -43,9 +25,6 @@ export default function Profile() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
-  const [pets, setPets] = useState<Pet[]>([]);
-  const [showPetForm, setShowPetForm] = useState(false);
-  const [isLoadingPets, setIsLoadingPets] = useState(false);
 
   const yandexAuth = useYandexAuth({
     apiUrls: {
@@ -73,23 +52,8 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       setEditForm({ name: user.name || '', city: user.city || '' });
-      loadPets();
     }
   }, [user]);
-
-  const loadPets = async () => {
-    if (!user) return;
-    setIsLoadingPets(true);
-    try {
-      const response = await fetch(`${PETS_API_URL}?user_id=${user.id}`);
-      const data = await response.json();
-      setPets(data);
-    } catch (error) {
-      console.error('Failed to load pets:', error);
-    } finally {
-      setIsLoadingPets(false);
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -310,63 +274,6 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-8 mt-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Мои питомцы</h2>
-              <Button onClick={() => setShowPetForm(true)}>
-                <Icon name="Plus" size={20} />
-                Добавить питомца
-              </Button>
-            </div>
-
-            {isLoadingPets ? (
-              <div className="text-center py-8">
-                <Icon name="Loader2" size={32} className="animate-spin text-pink-600 mx-auto" />
-              </div>
-            ) : pets.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Icon name="Dog" size={48} className="mx-auto mb-4 text-gray-300" />
-                <p>У вас пока нет объявлений о питомцах</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pets.map((pet) => (
-                  <div key={pet.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex gap-4">
-                      {pet.photo_url ? (
-                        <img src={pet.photo_url} alt={pet.name} className="w-20 h-20 rounded-lg object-cover" />
-                      ) : (
-                        <div className="w-20 h-20 bg-pink-100 rounded-lg flex items-center justify-center">
-                          <Icon name="Dog" size={32} className="text-pink-600" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg text-gray-800">{pet.name}</h3>
-                        {pet.breed && <p className="text-sm text-gray-600">{pet.breed}</p>}
-                        <div className="flex gap-2 mt-2 flex-wrap">
-                          {pet.age && (
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{pet.age} лет</span>
-                          )}
-                          {pet.gender && (
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                              {pet.gender === 'male' ? 'Кобель' : 'Сука'}
-                            </span>
-                          )}
-                          {pet.verification_paid && (
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded flex items-center gap-1">
-                              <Icon name="ShieldCheck" size={12} />
-                              Проверен
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           <div className="mt-6 text-center">
             <Button
               variant="ghost"
@@ -378,17 +285,6 @@ export default function Profile() {
             </Button>
           </div>
         </div>
-
-        {showPetForm && (
-          <PetForm
-            userId={user.id}
-            onSuccess={() => {
-              setShowPetForm(false);
-              loadPets();
-            }}
-            onCancel={() => setShowPetForm(false)}
-          />
-        )}
       </div>
     );
   }

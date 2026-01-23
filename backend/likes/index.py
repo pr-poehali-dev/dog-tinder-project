@@ -63,6 +63,7 @@ def get_likes(event: dict, conn) -> dict:
     query_params = event.get('queryStringParameters') or {}
     user_id = query_params.get('user_id')
     action = query_params.get('action', 'outgoing')
+    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
     
     if not user_id:
         return {
@@ -74,7 +75,7 @@ def get_likes(event: dict, conn) -> dict:
     
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         if action == 'matches':
-            cur.execute('''
+            cur.execute(f'''
                 SELECT 
                     m.id as match_id,
                     m.matched_at,
@@ -82,11 +83,11 @@ def get_likes(event: dict, conn) -> dict:
                     p2.id as pet2_id, p2.name as pet2_name, p2.photo_url as pet2_photo,
                     u1.id as user1_id, u1.name as user1_name,
                     u2.id as user2_id, u2.name as user2_name
-                FROM t_p11971418_dog_tinder_project.pet_matches m
-                JOIN t_p11971418_dog_tinder_project.pets p1 ON m.pet1_id = p1.id
-                JOIN t_p11971418_dog_tinder_project.pets p2 ON m.pet2_id = p2.id
-                JOIN t_p11971418_dog_tinder_project.users u1 ON p1.user_id = u1.id
-                JOIN t_p11971418_dog_tinder_project.users u2 ON p2.user_id = u2.id
+                FROM {schema}.pet_matches m
+                JOIN {schema}.pets p1 ON m.pet1_id = p1.id
+                JOIN {schema}.pets p2 ON m.pet2_id = p2.id
+                JOIN {schema}.users u1 ON p1.user_id = u1.id
+                JOIN {schema}.users u2 ON p2.user_id = u2.id
                 WHERE u1.id = %s OR u2.id = %s
                 ORDER BY m.matched_at DESC
             ''', (user_id, user_id))
@@ -108,30 +109,30 @@ def get_likes(event: dict, conn) -> dict:
             }
         
         elif action == 'incoming':
-            cur.execute('''
+            cur.execute(f'''
                 SELECT 
                     l.id, l.created_at,
                     p1.id as from_pet_id, p1.name as from_pet_name, p1.photo_url as from_pet_photo,
                     p1.breed as from_pet_breed, p1.age as from_pet_age,
                     u1.id as from_user_id, u1.name as from_user_name
-                FROM t_p11971418_dog_tinder_project.pet_likes l
-                JOIN t_p11971418_dog_tinder_project.pets p1 ON l.from_pet_id = p1.id
-                JOIN t_p11971418_dog_tinder_project.pets p2 ON l.to_pet_id = p2.id
-                JOIN t_p11971418_dog_tinder_project.users u1 ON p1.user_id = u1.id
+                FROM {schema}.pet_likes l
+                JOIN {schema}.pets p1 ON l.from_pet_id = p1.id
+                JOIN {schema}.pets p2 ON l.to_pet_id = p2.id
+                JOIN {schema}.users u1 ON p1.user_id = u1.id
                 WHERE p2.user_id = %s
                 ORDER BY l.created_at DESC
             ''', (user_id,))
         else:
-            cur.execute('''
+            cur.execute(f'''
                 SELECT 
                     l.id, l.created_at,
                     p2.id as to_pet_id, p2.name as to_pet_name, p2.photo_url as to_pet_photo,
                     p2.breed as to_pet_breed, p2.age as to_pet_age,
                     u2.id as to_user_id, u2.name as to_user_name
-                FROM t_p11971418_dog_tinder_project.pet_likes l
-                JOIN t_p11971418_dog_tinder_project.pets p1 ON l.from_pet_id = p1.id
-                JOIN t_p11971418_dog_tinder_project.pets p2 ON l.to_pet_id = p2.id
-                JOIN t_p11971418_dog_tinder_project.users u2 ON p2.user_id = u2.id
+                FROM {schema}.pet_likes l
+                JOIN {schema}.pets p1 ON l.from_pet_id = p1.id
+                JOIN {schema}.pets p2 ON l.to_pet_id = p2.id
+                JOIN {schema}.users u2 ON p2.user_id = u2.id
                 WHERE p1.user_id = %s
                 ORDER BY l.created_at DESC
             ''', (user_id,))
@@ -158,6 +159,7 @@ def create_like(body: dict, conn) -> dict:
     
     from_pet_id = body.get('from_pet_id')
     to_pet_id = body.get('to_pet_id')
+    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
     
     if not from_pet_id or not to_pet_id:
         return {
@@ -176,8 +178,8 @@ def create_like(body: dict, conn) -> dict:
         }
     
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute('''
-            INSERT INTO t_p11971418_dog_tinder_project.pet_likes (from_pet_id, to_pet_id)
+        cur.execute(f'''
+            INSERT INTO {schema}.pet_likes (from_pet_id, to_pet_id)
             VALUES (%s, %s)
             ON CONFLICT (from_pet_id, to_pet_id) DO NOTHING
             RETURNING id
@@ -185,9 +187,9 @@ def create_like(body: dict, conn) -> dict:
         
         result = cur.fetchone()
         
-        cur.execute('''
+        cur.execute(f'''
             SELECT COUNT(*) as count
-            FROM t_p11971418_dog_tinder_project.pet_likes
+            FROM {schema}.pet_likes
             WHERE from_pet_id = %s AND to_pet_id = %s
         ''', (to_pet_id, from_pet_id))
         
@@ -198,8 +200,8 @@ def create_like(body: dict, conn) -> dict:
             pet1_id = min(from_pet_id, to_pet_id)
             pet2_id = max(from_pet_id, to_pet_id)
             
-            cur.execute('''
-                INSERT INTO t_p11971418_dog_tinder_project.pet_matches (pet1_id, pet2_id)
+            cur.execute(f'''
+                INSERT INTO {schema}.pet_matches (pet1_id, pet2_id)
                 VALUES (%s, %s)
                 ON CONFLICT (pet1_id, pet2_id) DO NOTHING
                 RETURNING id
@@ -208,8 +210,8 @@ def create_like(body: dict, conn) -> dict:
             match_result = cur.fetchone()
             
             if match_result:
-                cur.execute('''
-                    INSERT INTO t_p11971418_dog_tinder_project.chats (match_id)
+                cur.execute(f'''
+                    INSERT INTO {schema}.chats (match_id)
                     VALUES (%s)
                     RETURNING id
                 ''', (match_result['id'],))

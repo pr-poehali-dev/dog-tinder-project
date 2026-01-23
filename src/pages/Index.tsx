@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
+const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
 
 interface Pet {
   id: number;
@@ -23,7 +24,14 @@ interface Pet {
   created_at?: string;
 }
 
+interface User {
+  id: number;
+  email: string;
+  name?: string;
+}
+
 export default function Index() {
+  const [user, setUser] = useState<User | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
   const [filteredPets, setFilteredPets] = useState<Pet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,8 +44,12 @@ export default function Index() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
     loadPets();
-  }, []);
+  }, [];
 
   useEffect(() => {
     applyFilters();
@@ -116,6 +128,12 @@ export default function Index() {
               >
                 <Icon name="SlidersHorizontal" size={20} />
                 Фильтры
+              </Button>
+              <Button variant="ghost" onClick={() => (window.location.href = '/likes')}>
+                <Icon name="Heart" size={24} />
+              </Button>
+              <Button variant="ghost" onClick={() => (window.location.href = '/chats')}>
+                <Icon name="MessageCircle" size={24} />
               </Button>
               <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>
                 <Icon name="User" size={24} />

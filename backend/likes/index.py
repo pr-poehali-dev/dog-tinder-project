@@ -234,6 +234,7 @@ def get_chats_or_messages(event: dict, conn) -> dict:
     query_params = event.get('queryStringParameters') or {}
     user_id = query_params.get('user_id')
     chat_id = query_params.get('chat_id')
+    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
     
     if not user_id:
         return {
@@ -245,13 +246,13 @@ def get_chats_or_messages(event: dict, conn) -> dict:
     
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         if chat_id:
-            cur.execute('''
+            cur.execute(f'''
                 SELECT 
                     m.id, m.message, m.created_at,
                     m.sender_user_id,
                     u.name as sender_name
-                FROM t_p11971418_dog_tinder_project.chat_messages m
-                JOIN t_p11971418_dog_tinder_project.users u ON m.sender_user_id = u.id
+                FROM {schema}.chat_messages m
+                JOIN {schema}.users u ON m.sender_user_id = u.id
                 WHERE m.chat_id = %s
                 ORDER BY m.created_at ASC
             ''', (chat_id,))
@@ -272,7 +273,7 @@ def get_chats_or_messages(event: dict, conn) -> dict:
                 'isBase64Encoded': False
             }
         else:
-            cur.execute('''
+            cur.execute(f'''
                 SELECT 
                     c.id as chat_id,
                     c.created_at,
@@ -283,24 +284,24 @@ def get_chats_or_messages(event: dict, conn) -> dict:
                     u2.id as user2_id, u2.name as user2_name,
                     (
                         SELECT cm.message 
-                        FROM t_p11971418_dog_tinder_project.chat_messages cm 
+                        FROM {schema}.chat_messages cm 
                         WHERE cm.chat_id = c.id 
                         ORDER BY cm.created_at DESC 
                         LIMIT 1
                     ) as last_message,
                     (
                         SELECT cm.created_at 
-                        FROM t_p11971418_dog_tinder_project.chat_messages cm 
+                        FROM {schema}.chat_messages cm 
                         WHERE cm.chat_id = c.id 
                         ORDER BY cm.created_at DESC 
                         LIMIT 1
                     ) as last_message_at
-                FROM t_p11971418_dog_tinder_project.chats c
-                JOIN t_p11971418_dog_tinder_project.pet_matches m ON c.match_id = m.id
-                JOIN t_p11971418_dog_tinder_project.pets p1 ON m.pet1_id = p1.id
-                JOIN t_p11971418_dog_tinder_project.pets p2 ON m.pet2_id = p2.id
-                JOIN t_p11971418_dog_tinder_project.users u1 ON p1.user_id = u1.id
-                JOIN t_p11971418_dog_tinder_project.users u2 ON p2.user_id = u2.id
+                FROM {schema}.chats c
+                JOIN {schema}.pet_matches m ON c.match_id = m.id
+                JOIN {schema}.pets p1 ON m.pet1_id = p1.id
+                JOIN {schema}.pets p2 ON m.pet2_id = p2.id
+                JOIN {schema}.users u1 ON p1.user_id = u1.id
+                JOIN {schema}.users u2 ON p2.user_id = u2.id
                 WHERE u1.id = %s OR u2.id = %s
                 ORDER BY COALESCE(last_message_at, c.created_at) DESC
             ''', (user_id, user_id))
@@ -338,9 +339,11 @@ def delete_like(body: dict, conn) -> dict:
             'isBase64Encoded': False
         }
     
+    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
+    
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute('''
-            DELETE FROM t_p11971418_dog_tinder_project.pet_likes
+        cur.execute(f'''
+            DELETE FROM {schema}.pet_likes
             WHERE from_pet_id = %s AND to_pet_id = %s
         ''', (from_pet_id, to_pet_id))
         
@@ -360,6 +363,7 @@ def send_message(body: dict, conn) -> dict:
     chat_id = body.get('chat_id')
     sender_user_id = body.get('sender_user_id')
     message = body.get('message')
+    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
     
     if not chat_id or not sender_user_id or not message:
         return {
@@ -370,8 +374,8 @@ def send_message(body: dict, conn) -> dict:
         }
     
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute('''
-            INSERT INTO t_p11971418_dog_tinder_project.chat_messages (chat_id, sender_user_id, message)
+        cur.execute(f'''
+            INSERT INTO {schema}.chat_messages (chat_id, sender_user_id, message)
             VALUES (%s, %s, %s)
             RETURNING id, created_at
         ''', (chat_id, sender_user_id, message))

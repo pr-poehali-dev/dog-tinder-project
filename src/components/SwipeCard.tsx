@@ -79,13 +79,15 @@ export default function SwipeCard({ pet, onSwipeLeft, onSwipeRight, style }: Swi
       <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-sm mx-auto">
         {/* Индикаторы свайпа */}
         {swipeDirection === 'right' && (
-          <div className="absolute top-8 left-8 z-10 bg-green-500 text-white px-6 py-3 rounded-xl font-bold text-2xl rotate-[-20deg] border-4 border-green-600">
-            ❤️ ЛАЙК
+          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+            <div className="animate-ping absolute inline-flex h-32 w-32 rounded-full bg-green-400 opacity-75"></div>
+            <div className="text-9xl animate-bounce">❤️</div>
           </div>
         )}
         {swipeDirection === 'left' && (
-          <div className="absolute top-8 right-8 z-10 bg-red-500 text-white px-6 py-3 rounded-xl font-bold text-2xl rotate-[20deg] border-4 border-red-600">
-            ✕ НЕТ
+          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+            <div className="animate-ping absolute inline-flex h-32 w-32 rounded-full bg-red-400 opacity-75"></div>
+            <div className="text-9xl animate-pulse">💔</div>
           </div>
         )}
 

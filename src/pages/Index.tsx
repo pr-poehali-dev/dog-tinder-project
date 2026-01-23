@@ -361,24 +361,7 @@ export default function Index() {
             Фильтры
           </Button>
           
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === 'swipe' ? 'default' : 'outline'}
-              onClick={() => setViewMode('swipe')}
-              className="gap-2"
-            >
-              <Icon name="Layers" size={20} />
-              Свайпы
-            </Button>
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'outline'}
-              onClick={() => setViewMode('grid')}
-              className="gap-2"
-            >
-              <Icon name="Grid3x3" size={20} />
-              Сетка
-            </Button>
-          </div>
+
         </div>
         {isLoading ? (
           <div className="text-center py-20">
@@ -394,7 +377,7 @@ export default function Index() {
               Добавить питомца
             </Button>
           </div>
-        ) : viewMode === 'swipe' ? (
+        ) : (
           <div className="flex flex-col items-center">
             {currentCardIndex >= displayedPets.length ? (
               <div className="text-center py-20">
@@ -436,26 +419,6 @@ export default function Index() {
                   )}
                 </div>
 
-                <div className="flex gap-6 items-center justify-center">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-16 h-16 rounded-full border-2 border-red-500 text-red-500 hover:bg-red-50"
-                    onClick={() => currentCard && handleSwipeLeft(currentCard.id)}
-                  >
-                    <Icon name="X" size={32} />
-                  </Button>
-                  
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-20 h-20 rounded-full border-2 border-green-500 text-green-500 hover:bg-green-50"
-                    onClick={() => currentCard && handleSwipeRight(currentCard.id)}
-                  >
-                    <Icon name="Heart" size={36} />
-                  </Button>
-                </div>
-
                 <div className="mt-6 text-center">
                   <p className="text-sm text-gray-500">
                     {currentCardIndex + 1} / {displayedPets.length}
@@ -463,103 +426,6 @@ export default function Index() {
                 </div>
               </>
             )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredPets.map((pet) => (
-              <div
-                key={pet.id}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-              >
-                <div className="relative h-64">
-                  {pet.photo_url ? (
-                    <img
-                      src={pet.photo_url}
-                      alt={pet.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-pink-200 to-orange-200 flex items-center justify-center">
-                      <Icon name="Dog" size={64} className="text-white opacity-50" />
-                    </div>
-                  )}
-                  {pet.verification_paid && (
-                    <Badge className="absolute top-3 right-3 bg-green-500 text-white">
-                      <Icon name="ShieldCheck" size={14} className="mr-1" />
-                      Проверен
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800">
-                        {pet.name}
-                        {pet.age && `, ${pet.age}`}
-                      </h3>
-                      {pet.breed && (
-                        <p className="text-sm text-gray-600">{pet.breed}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {pet.gender && (
-                      <Badge variant="secondary">
-                        {pet.gender === 'male' ? '♂ Кобель' : '♀ Сука'}
-                      </Badge>
-                    )}
-                    {pet.rank && (
-                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                        🏆 {pet.rank}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {(pet.city || pet.owner_city) && (
-                    <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                      <Icon name="MapPin" size={14} />
-                      <span>{pet.city || pet.owner_city}</span>
-                    </div>
-                  )}
-
-                  {pet.description && (
-                    <p className="text-sm text-gray-600 line-clamp-2">{pet.description}</p>
-                  )}
-
-                  {pet.owner_name && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <p className="text-xs text-gray-500">Владелец: {pet.owner_name}</p>
-                    </div>
-                  )}
-
-                  {user && myPetId && pet.id !== myPetId && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      {likedPets.has(pet.id) ? (
-                        <Button
-                          variant="outline"
-                          className="w-full gap-2 text-pink-600 border-pink-600"
-                          onClick={() => handleUnlike(pet.id)}
-                        >
-                          <Icon name="Heart" size={20} className="fill-pink-600" />
-                          Лайкнуто
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          className="w-full gap-2"
-                          onClick={() => handleLike(pet.id)}
-                        >
-                          <Icon name="Heart" size={20} />
-                          Лайкнуть
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
           </div>
         )}
       </main>

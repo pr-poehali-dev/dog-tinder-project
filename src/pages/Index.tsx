@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
+const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
 
 interface Pet {
   id: number;
@@ -24,6 +25,9 @@ interface Pet {
 }
 
 export default function Index() {
+  const [user, setUser] = useState<{id: number} | null>(null);
+  const [myPetId, setMyPetId] = useState<number | null>(null);
+  const [likedPets, setLikedPets] = useState<Set<number>>(new Set());
   const [pets, setPets] = useState<Pet[]>([]);
   const [filteredPets, setFilteredPets] = useState<Pet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,8 +40,79 @@ export default function Index() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      setUser(userData);
+      loadMyPet(userData.id);
+      loadMyLikes(userData.id);
+    }
     loadPets();
   }, []);
+
+  const loadMyPet = async (userId: number) => {
+    try {
+      const response = await fetch(`${PETS_API_URL}?user_id=${userId}`);
+      const data = await response.json();
+      if (data.length > 0) {
+        setMyPetId(data[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load my pet:', error);
+    }
+  };
+
+  const loadMyLikes = async (userId: number) => {
+    try {
+      const response = await fetch(`${LIKES_API_URL}?action=outgoing&user_id=${userId}`);
+      const data = await response.json();
+      const likedIds = new Set(data.map((like: any) => like.to_pet_id));
+      setLikedPets(likedIds);
+    } catch (error) {
+      console.error('Failed to load likes:', error);
+    }
+  };
+
+  const handleLike = async (petId: number) => {
+    if (!myPetId || !user) return;
+
+    try {
+      const response = await fetch(LIKES_API_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({from_pet_id: myPetId, to_pet_id: petId})
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setLikedPets(prev => new Set([...prev, petId]));
+        if (data.is_match) {
+          alert('🎉 Взаимная симпатия! Теперь вы можете писать друг другу!');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to like:', error);
+    }
+  };
+
+  const handleUnlike = async (petId: number) => {
+    if (!myPetId) return;
+
+    try {
+      await fetch(LIKES_API_URL, {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({from_pet_id: myPetId, to_pet_id: petId})
+      });
+      setLikedPets(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(petId);
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Failed to unlike:', error);
+    }
+  };
 
   useEffect(() => {
     applyFilters();
@@ -109,13 +184,11 @@ export default function Index() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="gap-2"
-              >
-                <Icon name="SlidersHorizontal" size={20} />
-                Фильтры
+              <Button variant="ghost" onClick={() => (window.location.href = '/likes')}>
+                <Icon name="Heart" size={24} />
+              </Button>
+              <Button variant="ghost" onClick={() => (window.location.href = '/chats')}>
+                <Icon name="MessageCircle" size={24} />
               </Button>
               <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>
                 <Icon name="User" size={24} />
@@ -189,6 +262,16 @@ export default function Index() {
       )}
 
       <main className="container mx-auto px-4 py-8">
+        <div className="mb-6">
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-2"
+          >
+            <Icon name="SlidersHorizontal" size={20} />
+            Фильтры
+          </Button>
+        </div>
         {isLoading ? (
           <div className="text-center py-20">
             <Icon name="Loader2" size={48} className="animate-spin text-pink-600 mx-auto" />
@@ -270,6 +353,30 @@ export default function Index() {
                   {pet.owner_name && (
                     <div className="mt-3 pt-3 border-t border-gray-100">
                       <p className="text-xs text-gray-500">Владелец: {pet.owner_name}</p>
+                    </div>
+                  )}
+
+                  {user && myPetId && pet.id !== myPetId && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      {likedPets.has(pet.id) ? (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2 text-pink-600 border-pink-600"
+                          onClick={() => handleUnlike(pet.id)}
+                        >
+                          <Icon name="Heart" size={20} className="fill-pink-600" />
+                          Лайкнуто
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2"
+                          onClick={() => handleLike(pet.id)}
+                        >
+                          <Icon name="Heart" size={20} />
+                          Лайкнуть
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -13,7 +13,7 @@ def handler(event: dict, context) -> dict:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type'
             },
             'body': '',
@@ -41,6 +41,11 @@ def handler(event: dict, context) -> dict:
                 return send_message(body, conn)
             else:
                 return create_like(body, conn)
+        
+        elif method == 'DELETE':
+            body_str = event.get('body') or '{}'
+            body = json.loads(body_str)
+            return delete_like(body, conn)
         
         return {
             'statusCode': 405,
@@ -317,6 +322,36 @@ def get_chats_or_messages(event: dict, conn) -> dict:
                 'body': json.dumps(result),
                 'isBase64Encoded': False
             }
+
+
+def delete_like(body: dict, conn) -> dict:
+    """Удалить лайк"""
+    
+    from_pet_id = body.get('from_pet_id')
+    to_pet_id = body.get('to_pet_id')
+    
+    if not from_pet_id or not to_pet_id:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'from_pet_id and to_pet_id are required'}),
+            'isBase64Encoded': False
+        }
+    
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute('''
+            DELETE FROM t_p11971418_dog_tinder_project.pet_likes
+            WHERE from_pet_id = %s AND to_pet_id = %s
+        ''', (from_pet_id, to_pet_id))
+        
+        conn.commit()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'success': True}),
+            'isBase64Encoded': False
+        }
 
 
 def send_message(body: dict, conn) -> dict:

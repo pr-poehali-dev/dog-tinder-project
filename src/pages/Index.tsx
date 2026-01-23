@@ -1,381 +1,289 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-interface DogProfile {
+const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
+
+interface Pet {
   id: number;
+  user_id: number;
   name: string;
-  breed: string;
-  age: number;
-  gender: 'Мальчик' | 'Девочка';
-  image: string;
-  location: string;
-  description: string;
-  verified: boolean;
+  breed?: string;
+  age?: number;
+  gender?: string;
+  rank?: string;
+  city?: string;
+  description?: string;
+  photo_url?: string;
+  verification_paid?: boolean;
+  passport_verified?: boolean;
+  owner_name?: string;
+  owner_city?: string;
+  created_at?: string;
 }
 
-const dogs: DogProfile[] = [
-  {
-    id: 1,
-    name: 'Рекс',
-    breed: 'Золотистый ретривер',
-    age: 3,
-    gender: 'Мальчик',
-    image: 'https://cdn.poehali.dev/projects/d74a4f5a-6886-4dec-8dc8-f01016c0890c/files/94a44930-2b70-467d-852b-ed75cd9c1441.jpg',
-    location: 'Москва, Парк Горького',
-    description: 'Дружелюбный и активный пёс, обожает плавать и играть с мячом 🎾',
-    verified: true,
-  },
-  {
-    id: 2,
-    name: 'Луна',
-    breed: 'Хаски',
-    age: 2,
-    gender: 'Девочка',
-    image: 'https://cdn.poehali.dev/projects/d74a4f5a-6886-4dec-8dc8-f01016c0890c/files/175997cd-d9a2-4f4e-abfa-42b37ee57f8b.jpg',
-    location: 'Санкт-Петербург',
-    description: 'Энергичная красавица с голубыми глазами, любит длительные прогулки 🐺',
-    verified: true,
-  },
-  {
-    id: 3,
-    name: 'Арчи',
-    breed: 'Корги',
-    age: 4,
-    gender: 'Мальчик',
-    image: 'https://cdn.poehali.dev/projects/d74a4f5a-6886-4dec-8dc8-f01016c0890c/files/5e544908-0b0e-4430-aea1-621a831a841b.jpg',
-    location: 'Казань',
-    description: 'Весёлый коротколапик, мастер поднимать настроение всей семье 😊',
-    verified: false,
-  },
-];
-
 export default function Index() {
-  const [currentDogIndex, setCurrentDogIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [animationType, setAnimationType] = useState<'left' | 'right' | null>(null);
-  const [activeTab, setActiveTab] = useState<'home' | 'likes' | 'messages' | 'profile'>('home');
-  const [likes, setLikes] = useState<DogProfile[]>([]);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [filteredPets, setFilteredPets] = useState<Pet[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    city: '',
+    gender: '',
+    breed: '',
+    rank: '',
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
-  const currentDog = dogs[currentDogIndex];
+  useEffect(() => {
+    loadPets();
+  }, []);
 
-  const handleSwipe = (direction: 'left' | 'right') => {
-    if (isAnimating) return;
+  useEffect(() => {
+    applyFilters();
+  }, [filters, pets]);
 
-    setIsAnimating(true);
-    setAnimationType(direction);
+  const loadPets = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(PETS_API_URL);
+      const data = await response.json();
+      setPets(data);
+    } catch (error) {
+      console.error('Failed to load pets:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    if (direction === 'right') {
-      setLikes([...likes, currentDog]);
+  const applyFilters = () => {
+    let filtered = [...pets];
+
+    if (filters.city) {
+      filtered = filtered.filter(
+        (pet) =>
+          pet.city?.toLowerCase().includes(filters.city.toLowerCase()) ||
+          pet.owner_city?.toLowerCase().includes(filters.city.toLowerCase())
+      );
     }
 
-    setTimeout(() => {
-      if (currentDogIndex < dogs.length - 1) {
-        setCurrentDogIndex(currentDogIndex + 1);
-      } else {
-        setCurrentDogIndex(0);
-      }
-      setIsAnimating(false);
-      setAnimationType(null);
-      setDragOffset({ x: 0, y: 0 });
-    }, 500);
-  };
-
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-    if (isAnimating) return;
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    setDragStart({ x: clientX, y: clientY });
-  };
-
-  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!dragStart || isAnimating) return;
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const deltaX = clientX - dragStart.x;
-    const deltaY = clientY - dragStart.y;
-    setDragOffset({ x: deltaX, y: deltaY });
-  };
-
-  const handleDragEnd = () => {
-    if (!dragStart || isAnimating) return;
-    const threshold = 100;
-    if (Math.abs(dragOffset.x) > threshold) {
-      handleSwipe(dragOffset.x > 0 ? 'right' : 'left');
-    } else {
-      setDragOffset({ x: 0, y: 0 });
+    if (filters.gender) {
+      filtered = filtered.filter((pet) => pet.gender === filters.gender);
     }
-    setDragStart(null);
+
+    if (filters.breed) {
+      filtered = filtered.filter((pet) =>
+        pet.breed?.toLowerCase().includes(filters.breed.toLowerCase())
+      );
+    }
+
+    if (filters.rank) {
+      filtered = filtered.filter((pet) =>
+        pet.rank?.toLowerCase().includes(filters.rank.toLowerCase())
+      );
+    }
+
+    setFilteredPets(filtered);
   };
 
-  const renderHomeTab = () => (
-    <div className="flex-1 flex items-center justify-center p-4 pb-24">
-      {currentDog ? (
-        <Card
-          className={`relative w-full max-w-md h-[600px] overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing ${
-            animationType === 'left' ? 'animate-swipe-left' : ''
-          } ${animationType === 'right' ? 'animate-swipe-right' : ''}`}
-          style={{
-            transform: !isAnimating ? `translateX(${dragOffset.x}px) translateY(${dragOffset.y * 0.3}px) rotate(${dragOffset.x * 0.1}deg)` : undefined,
-            transition: !dragStart && !isAnimating ? 'transform 0.3s ease-out' : 'none',
-          }}
-          onMouseDown={handleDragStart}
-          onMouseMove={handleDragMove}
-          onMouseUp={handleDragEnd}
-          onMouseLeave={handleDragEnd}
-          onTouchStart={handleDragStart}
-          onTouchMove={handleDragMove}
-          onTouchEnd={handleDragEnd}
-        >
-          <div className="relative h-full">
-            <img
-              src={currentDog.image}
-              alt={currentDog.name}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-            <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
-              <div
-                className="text-6xl font-bold text-red-500 opacity-0 transition-opacity"
-                style={{ opacity: dragOffset.x < -50 ? Math.min(Math.abs(dragOffset.x) / 150, 1) : 0 }}
-              >
-                ✕
-              </div>
-              {currentDog.verified && (
-                <Badge className="bg-blue-500 text-white">
-                  <Icon name="BadgeCheck" size={14} className="mr-1" />
-                  Проверен
-                </Badge>
-              )}
-              <div
-                className="text-6xl font-bold text-green-500 opacity-0 transition-opacity"
-                style={{ opacity: dragOffset.x > 50 ? Math.min(dragOffset.x / 150, 1) : 0 }}
-              >
-                ♥
-              </div>
-            </div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-              <h2 className="text-4xl font-fredoka font-bold mb-2">
-                {currentDog.name}, {currentDog.age}
-              </h2>
-              <div className="flex items-center gap-2 mb-3">
-                <Icon name="MapPin" size={18} />
-                <span className="text-lg">{currentDog.location}</span>
-              </div>
-              <p className="text-lg mb-2">
-                {currentDog.breed} • {currentDog.gender}
-              </p>
-              <p className="text-base opacity-90">{currentDog.description}</p>
-            </div>
-          </div>
-        </Card>
-      ) : (
-        <div className="text-center">
-          <Icon name="Dog" size={64} className="mx-auto mb-4 text-muted-foreground" />
-          <p className="text-xl text-muted-foreground">Больше нет питомцев поблизости</p>
-        </div>
-      )}
-
-      {currentDog && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-6">
-          <Button
-            onClick={() => handleSwipe('left')}
-            disabled={isAnimating}
-            size="lg"
-            className="h-16 w-16 rounded-full bg-white text-red-500 hover:bg-red-50 shadow-xl"
-          >
-            <Icon name="X" size={32} />
-          </Button>
-          <Button
-            onClick={() => handleSwipe('right')}
-            disabled={isAnimating}
-            size="lg"
-            className="h-20 w-20 rounded-full bg-gradient-to-r from-[#FF5733] to-[#FFA500] text-white hover:opacity-90 shadow-xl"
-          >
-            <Icon name="Heart" size={36} />
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderLikesTab = () => (
-    <div className="flex-1 p-4 pb-24 overflow-auto">
-      <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-[#FF5733] to-[#FFA500] bg-clip-text text-transparent">
-        Понравившиеся 💕
-      </h2>
-      {likes.length === 0 ? (
-        <div className="text-center mt-20">
-          <Icon name="Heart" size={64} className="mx-auto mb-4 text-muted-foreground" />
-          <p className="text-xl text-muted-foreground">Пока нет лайков</p>
-          <p className="text-base text-muted-foreground mt-2">
-            Начните свайпать вправо на питомцев, которые вам нравятся!
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {likes.map((dog) => (
-            <Card key={dog.id} className="overflow-hidden animate-fade-in">
-              <img src={dog.image} alt={dog.name} className="w-full h-48 object-cover" />
-              <div className="p-3">
-                <h3 className="font-fredoka font-bold text-lg">
-                  {dog.name}, {dog.age}
-                </h3>
-                <p className="text-sm text-muted-foreground">{dog.breed}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderMessagesTab = () => (
-    <div className="flex-1 p-4 pb-24">
-      <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-[#FF5733] to-[#FFA500] bg-clip-text text-transparent">
-        Сообщения 💬
-      </h2>
-      <div className="text-center mt-20">
-        <Icon name="MessageCircle" size={64} className="mx-auto mb-4 text-muted-foreground" />
-        <p className="text-xl text-muted-foreground">Пока нет сообщений</p>
-        <p className="text-base text-muted-foreground mt-2">
-          Когда найдёте пару, здесь появятся чаты!
-        </p>
-      </div>
-    </div>
-  );
-
-  const renderProfileTab = () => (
-    <div className="flex-1 p-4 pb-24 overflow-auto">
-      <h2 className="text-3xl font-fredoka font-bold mb-6 text-center bg-gradient-to-r from-[#FF5733] to-[#FFA500] bg-clip-text text-transparent">
-        Платные услуги 🐾
-      </h2>
-      <div className="max-w-md mx-auto space-y-4">
-        <Card className="p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-start gap-4">
-            <div className="bg-gradient-to-br from-[#FF5733] to-[#FFA500] rounded-full p-3">
-              <Icon name="Stethoscope" size={32} className="text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-2xl font-fredoka font-bold mb-2">
-                Ветеринарное сопровождение
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Полный контроль здоровья питомца на всех этапах вязки
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-3xl font-bold text-primary">7 500 ₽</span>
-                <Button className="bg-gradient-to-r from-[#FF5733] to-[#FFA500] hover:opacity-90">
-                  Подключить
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-start gap-4">
-            <div className="bg-gradient-to-br from-[#FF5733] to-[#FFA500] rounded-full p-3">
-              <Icon name="FileCheck" size={32} className="text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-2xl font-fredoka font-bold mb-2">Проверка документов</h3>
-              <p className="text-muted-foreground mb-4">
-                Полная проверка родословной и медицинских документов
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-3xl font-bold text-secondary">500 ₽</span>
-                <Button className="bg-gradient-to-r from-[#FF5733] to-[#FFA500] hover:opacity-90">
-                  Проверить
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <div className="mt-8 text-center">
-          <a 
-            href="/oferta" 
-            className="text-sm text-muted-foreground hover:text-primary underline"
-          >
-            Публичная оферта
-          </a>
-        </div>
-      </div>
-    </div>
-  );
+  const resetFilters = () => {
+    setFilters({
+      city: '',
+      gender: '',
+      breed: '',
+      rank: '',
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <header className="bg-white shadow-sm p-4 sticky top-0 z-10 border-b">
-        <div className="flex items-center justify-center gap-3">
-          <img src="https://cdn.poehali.dev/files/photo_5377747840479727438_x.jpg" alt="TinDog" className="h-12 w-auto" />
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white">
+      <header className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-r from-pink-500 to-orange-500 p-2 rounded-xl">
+                <Icon name="Heart" size={28} className="text-white" />
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent">
+                TinDog
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                className="gap-2"
+              >
+                <Icon name="SlidersHorizontal" size={20} />
+                Фильтры
+              </Button>
+              <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>
+                <Icon name="User" size={24} />
+              </Button>
+            </div>
+          </div>
         </div>
       </header>
 
-      {activeTab === 'home' && renderHomeTab()}
-      {activeTab === 'likes' && renderLikesTab()}
-      {activeTab === 'messages' && renderMessagesTab()}
-      {activeTab === 'profile' && renderProfileTab()}
+      {showFilters && (
+        <div className="bg-white border-b shadow-sm">
+          <div className="container mx-auto px-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Город</label>
+                <input
+                  type="text"
+                  value={filters.city}
+                  onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="Москва"
+                />
+              </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t">
-        <div className="flex items-center justify-around p-4">
-          <button
-            onClick={() => setActiveTab('home')}
-            className={`flex flex-col items-center gap-1 transition-colors ${
-              activeTab === 'home' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <Icon name="Home" size={24} />
-            <span className="text-xs font-medium">Главная</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('likes')}
-            className={`flex flex-col items-center gap-1 transition-colors relative ${
-              activeTab === 'likes' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <Icon name="Heart" size={24} />
-            <span className="text-xs font-medium">Лайки</span>
-            {likes.length > 0 && (
-              <Badge className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs p-0">
-                {likes.length}
-              </Badge>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('messages')}
-            className={`flex flex-col items-center gap-1 transition-colors ${
-              activeTab === 'messages' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <Icon name="MessageCircle" size={24} />
-            <span className="text-xs font-medium">Сообщения</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex flex-col items-center gap-1 transition-colors ${
-              activeTab === 'profile' ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <Icon name="ShoppingBag" size={24} />
-            <span className="text-xs font-medium">Услуги</span>
-          </button>
-          <a
-            href="/profile"
-            className={`flex flex-col items-center gap-1 transition-colors text-muted-foreground`}
-          >
-            <Icon name="User" size={24} />
-            <span className="text-xs font-medium">Кабинет</span>
-          </a>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Порода</label>
+                <input
+                  type="text"
+                  value={filters.breed}
+                  onChange={(e) => setFilters({ ...filters, breed: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="Лабрадор"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Пол</label>
+                <select
+                  value={filters.gender}
+                  onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                >
+                  <option value="">Любой</option>
+                  <option value="male">Кобель</option>
+                  <option value="female">Сука</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ранг/Титул</label>
+                <input
+                  type="text"
+                  value={filters.rank}
+                  onChange={(e) => setFilters({ ...filters, rank: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="Чемпион"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" onClick={resetFilters} className="flex-1">
+                Сбросить
+              </Button>
+              <Button onClick={() => setShowFilters(false)} className="flex-1">
+                Применить
+              </Button>
+            </div>
+          </div>
         </div>
-      </nav>
+      )}
+
+      <main className="container mx-auto px-4 py-8">
+        {isLoading ? (
+          <div className="text-center py-20">
+            <Icon name="Loader2" size={48} className="animate-spin text-pink-600 mx-auto" />
+            <p className="text-gray-600 mt-4">Загрузка питомцев...</p>
+          </div>
+        ) : filteredPets.length === 0 ? (
+          <div className="text-center py-20">
+            <Icon name="Dog" size={64} className="mx-auto mb-4 text-gray-300" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Нет питомцев</h2>
+            <p className="text-gray-600 mb-4">Попробуйте изменить фильтры или добавьте своего питомца</p>
+            <Button onClick={() => (window.location.href = '/profile')}>
+              Добавить питомца
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredPets.map((pet) => (
+              <div
+                key={pet.id}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+              >
+                <div className="relative h-64">
+                  {pet.photo_url ? (
+                    <img
+                      src={pet.photo_url}
+                      alt={pet.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-pink-200 to-orange-200 flex items-center justify-center">
+                      <Icon name="Dog" size={64} className="text-white opacity-50" />
+                    </div>
+                  )}
+                  {pet.verification_paid && (
+                    <Badge className="absolute top-3 right-3 bg-green-500 text-white">
+                      <Icon name="ShieldCheck" size={14} className="mr-1" />
+                      Проверен
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800">
+                        {pet.name}
+                        {pet.age && `, ${pet.age}`}
+                      </h3>
+                      {pet.breed && (
+                        <p className="text-sm text-gray-600">{pet.breed}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {pet.gender && (
+                      <Badge variant="secondary">
+                        {pet.gender === 'male' ? '♂ Кобель' : '♀ Сука'}
+                      </Badge>
+                    )}
+                    {pet.rank && (
+                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                        🏆 {pet.rank}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {(pet.city || pet.owner_city) && (
+                    <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                      <Icon name="MapPin" size={14} />
+                      <span>{pet.city || pet.owner_city}</span>
+                    </div>
+                  )}
+
+                  {pet.description && (
+                    <p className="text-sm text-gray-600 line-clamp-2">{pet.description}</p>
+                  )}
+
+                  {pet.owner_name && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <p className="text-xs text-gray-500">Владелец: {pet.owner_name}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      <footer className="bg-white border-t mt-12">
+        <div className="container mx-auto px-4 py-6 text-center text-gray-600">
+          <p>© 2024 TinDog. Найди друга для своего питомца 🐾</p>
+        </div>
+      </footer>
     </div>
   );
 }

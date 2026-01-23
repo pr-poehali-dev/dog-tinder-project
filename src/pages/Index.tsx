@@ -419,10 +419,21 @@ export default function Index() {
                   )}
                 </div>
 
-                <div className="mt-6 text-center">
+                <div className="mt-6 text-center space-y-3">
                   <p className="text-sm text-gray-500">
                     {currentCardIndex + 1} / {displayedPets.length}
                   </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      alert('Свайпайте карточки:\n\n← Влево — пропустить (💔)\n→ Вправо — лайкнуть (❤️)\n\nИли просто перетаскивайте карточку пальцем/мышкой!');
+                    }}
+                  >
+                    <Icon name="Info" size={14} className="mr-1" />
+                    Как пользоваться?
+                  </Button>
                 </div>
               </>
             )}

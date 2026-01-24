@@ -41,9 +41,8 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [wantsVerification, setWantsVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [recommendedPrice, setRecommendedPrice] = useState<number | null>(null);
 
-  const calculateRecommendedPrice = () => {
+  const calculateRecommendedPrice = (): number | null => {
     const breedPrices: { [key: string]: number } = {
       'хаски': 25000,
       'немецкая овчарка': 20000,
@@ -70,6 +69,10 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
       'французский бульдог': 35000,
     };
 
+    if (!formData.breed && !formData.rank && !formData.age) {
+      return null;
+    }
+
     let basePrice = 15000;
 
     if (formData.breed) {
@@ -90,20 +93,18 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
     }
 
     const age = parseInt(formData.age);
-    if (age >= 2 && age <= 6) {
-      basePrice *= 1.1;
-    } else if (age > 8) {
-      basePrice *= 0.8;
+    if (!isNaN(age)) {
+      if (age >= 2 && age <= 6) {
+        basePrice *= 1.1;
+      } else if (age > 8) {
+        basePrice *= 0.8;
+      }
     }
 
-    setRecommendedPrice(Math.round(basePrice));
+    return Math.round(basePrice);
   };
 
-  useEffect(() => {
-    if (formData.breed || formData.rank || formData.age) {
-      calculateRecommendedPrice();
-    }
-  }, [formData.breed, formData.rank, formData.age]);
+  const recommendedPrice = calculateRecommendedPrice();
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

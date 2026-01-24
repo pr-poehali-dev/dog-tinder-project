@@ -15,6 +15,7 @@ interface Pet {
   city?: string;
   description?: string;
   photo_url?: string;
+  breeding_price?: number;
 }
 
 interface PetFormProps {
@@ -33,6 +34,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
     rank: editingPet?.rank || '',
     city: editingPet?.city || '',
     description: editingPet?.description || '',
+    breeding_price: editingPet?.breeding_price?.toString() || '',
   });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>(editingPet?.photo_url || '');
@@ -94,6 +96,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
             rank: formData.rank,
             city: formData.city,
             description: formData.description,
+            breeding_price: parseInt(formData.breeding_price) || null,
             photo_url: photoUrl || (editingPet?.photo_url || ''),
           }),
         }
@@ -232,6 +235,19 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   placeholder="Москва"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Цена за вязку (₽)</label>
+                <input
+                  type="number"
+                  value={formData.breeding_price}
+                  onChange={(e) => setFormData({ ...formData, breeding_price: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="10000"
+                  min="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">Оставьте пустым, если бесплатно или договорная</p>
               </div>
             </div>
 

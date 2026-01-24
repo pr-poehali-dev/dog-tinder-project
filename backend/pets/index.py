@@ -152,6 +152,7 @@ def create_pet(event: dict, conn) -> dict:
     rank = body.get('rank')
     city = body.get('city')
     description = body.get('description')
+    breeding_price = body.get('breeding_price')
     photo_url = body.get('photo_url')
     
     if not user_id or not name:
@@ -165,10 +166,10 @@ def create_pet(event: dict, conn) -> dict:
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute('''
             INSERT INTO t_p11971418_dog_tinder_project.pets 
-            (user_id, name, species, breed, age, gender, rank, city, description, photo_url)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (user_id, name, species, breed, age, gender, rank, city, description, breeding_price, photo_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING *
-        ''', (user_id, name, 'dog', breed, age, gender, rank, city, description, photo_url))
+        ''', (user_id, name, 'dog', breed, age, gender, rank, city, description, breeding_price, photo_url))
         
         new_pet = cur.fetchone()
         conn.commit()
@@ -354,7 +355,7 @@ def update_pet(event: dict, conn) -> dict:
     update_fields = []
     update_values = []
     
-    for field in ['name', 'breed', 'age', 'gender', 'rank', 'city', 'description', 'photo_url', 'is_active']:
+    for field in ['name', 'breed', 'age', 'gender', 'rank', 'city', 'description', 'photo_url', 'is_active', 'breeding_price']:
         if field in body:
             update_fields.append(f"{field} = %s")
             update_values.append(body[field])

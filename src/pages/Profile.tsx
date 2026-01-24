@@ -33,6 +33,7 @@ interface Pet {
   photo_url?: string;
   verification_paid?: boolean;
   passport_verified?: boolean;
+  breeding_price?: number;
   is_active?: boolean;
   created_at?: string;
 }
@@ -422,6 +423,11 @@ export default function Profile() {
                             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded flex items-center gap-1">
                               <Icon name="ShieldCheck" size={12} />
                               Проверен
+                            </span>
+                          )}
+                          {pet.breeding_price && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              {pet.breeding_price.toLocaleString('ru-RU')} ₽
                             </span>
                           )}
                         </div>

@@ -23,6 +23,7 @@ interface Pet {
   photo_url?: string;
   verification_paid?: boolean;
   passport_verified?: boolean;
+  breeding_price?: number;
   owner_name?: string;
   owner_city?: string;
   created_at?: string;

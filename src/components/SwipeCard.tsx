@@ -16,6 +16,7 @@ interface Pet {
   photo_url?: string;
   verification_paid?: boolean;
   passport_verified?: boolean;
+  breeding_price?: number;
   owner_name?: string;
   owner_city?: string;
   created_at?: string;
@@ -192,6 +193,11 @@ export default function SwipeCard({ pet, onSwipeLeft, onSwipeRight, style }: Swi
               {pet.rank && (
                 <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 text-sm">
                   🏆 {pet.rank}
+                </Badge>
+              )}
+              {pet.breeding_price && (
+                <Badge variant="secondary" className="bg-green-100 text-green-800 text-sm">
+                  💰 {pet.breeding_price.toLocaleString('ru-RU')} ₽
                 </Badge>
               )}
             </div>

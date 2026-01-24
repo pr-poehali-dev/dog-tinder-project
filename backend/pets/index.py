@@ -344,6 +344,8 @@ def update_pet(event: dict, conn) -> dict:
     body = json.loads(event.get('body', '{}'))
     pet_id = body.get('pet_id')
     
+    print(f"DEBUG: Update pet request - pet_id={pet_id}, breeding_price={body.get('breeding_price')}")
+    
     if not pet_id:
         return {
             'statusCode': 400,

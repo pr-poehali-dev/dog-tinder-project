@@ -161,6 +161,9 @@ export default function Likes() {
               <Button variant="ghost" onClick={() => (window.location.href = '/chats')}>
                 <Icon name="MessageCircle" size={24} />
               </Button>
+              <Button variant="ghost" onClick={() => (window.location.href = '/chatgpt')}>
+                <Icon name="Bot" size={24} />
+              </Button>
               <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>
                 <Icon name="User" size={24} />
               </Button>

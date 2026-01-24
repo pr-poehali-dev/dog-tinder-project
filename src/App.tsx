@@ -10,6 +10,7 @@ import Likes from "./pages/Likes";
 import Chats from "./pages/Chats";
 import Oferta from "./pages/Oferta";
 import YandexCallback from "./pages/YandexCallback";
+import ChatGPTPage from "./pages/ChatGPTPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/likes" element={<Likes />} />
           <Route path="/chats" element={<Chats />} />
           <Route path="/oferta" element={<Oferta />} />
+          <Route path="/chatgpt" element={<ChatGPTPage />} />
           <Route path="/auth/yandex/callback" element={<YandexCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

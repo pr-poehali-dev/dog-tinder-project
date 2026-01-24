@@ -248,13 +248,37 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Порода</label>
-                <input
-                  type="text"
+                <select
                   value={formData.breed}
                   onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Лабрадор"
-                />
+                >
+                  <option value="">Выберите породу</option>
+                  <option value="Хаски">Хаски</option>
+                  <option value="Немецкая овчарка">Немецкая овчарка</option>
+                  <option value="Лабрадор">Лабрадор</option>
+                  <option value="Золотистый ретривер">Золотистый ретривер</option>
+                  <option value="Французский бульдог">Французский бульдог</option>
+                  <option value="Английский бульдог">Английский бульдог</option>
+                  <option value="Корги">Корги</option>
+                  <option value="Самоед">Самоед</option>
+                  <option value="Йоркширский терьер">Йоркширский терьер</option>
+                  <option value="Чихуахуа">Чихуахуа</option>
+                  <option value="Мопс">Мопс</option>
+                  <option value="Шпиц">Шпиц</option>
+                  <option value="Такса">Такса</option>
+                  <option value="Бишон фризе">Бишон фризе</option>
+                  <option value="Пудель">Пудель</option>
+                  <option value="Акита">Акита</option>
+                  <option value="Алабай">Алабай</option>
+                  <option value="Кавказская овчарка">Кавказская овчарка</option>
+                  <option value="Бигль">Бигль</option>
+                  <option value="Боксер">Боксер</option>
+                  <option value="Доберман">Доберман</option>
+                  <option value="Ротвейлер">Ротвейлер</option>
+                  <option value="Джек рассел терьер">Джек рассел терьер</option>
+                  <option value="Другая">Другая порода</option>
+                </select>
               </div>
 
               <div>
@@ -282,24 +306,51 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Ранг/Титул</label>
-                <input
-                  type="text"
+                <select
                   value={formData.rank}
                   onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Чемпион"
-                />
+                >
+                  <option value="">Без ранга</option>
+                  <option value="Чемпион России">Чемпион России</option>
+                  <option value="Чемпион РКФ">Чемпион РКФ</option>
+                  <option value="Юный чемпион">Юный чемпион</option>
+                  <option value="Кандидат в чемпионы">Кандидат в чемпионы</option>
+                  <option value="Гранд чемпион">Гранд чемпион</option>
+                  <option value="Чемпион НКП">Чемпион НКП</option>
+                  <option value="Элитный производитель">Элитный производитель</option>
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Город</label>
-                <input
-                  type="text"
+                <select
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Москва"
-                />
+                >
+                  <option value="">Выберите город</option>
+                  <option value="Москва">Москва</option>
+                  <option value="Санкт-Петербург">Санкт-Петербург</option>
+                  <option value="Новосибирск">Новосибирск</option>
+                  <option value="Екатеринбург">Екатеринбург</option>
+                  <option value="Казань">Казань</option>
+                  <option value="Нижний Новгород">Нижний Новгород</option>
+                  <option value="Челябинск">Челябинск</option>
+                  <option value="Самара">Самара</option>
+                  <option value="Омск">Омск</option>
+                  <option value="Ростов-на-Дону">Ростов-на-Дону</option>
+                  <option value="Уфа">Уфа</option>
+                  <option value="Красноярск">Красноярск</option>
+                  <option value="Воронеж">Воронеж</option>
+                  <option value="Пермь">Пермь</option>
+                  <option value="Волгоград">Волгоград</option>
+                  <option value="Краснодар">Краснодар</option>
+                  <option value="Саратов">Саратов</option>
+                  <option value="Тюмень">Тюмень</option>
+                  <option value="Тольятти">Тольятти</option>
+                  <option value="Ижевск">Ижевск</option>
+                </select>
               </div>
 
               <div className="col-span-2">

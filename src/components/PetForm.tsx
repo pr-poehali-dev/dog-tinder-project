@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
@@ -41,6 +41,69 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [wantsVerification, setWantsVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recommendedPrice, setRecommendedPrice] = useState<number | null>(null);
+
+  const calculateRecommendedPrice = () => {
+    const breedPrices: { [key: string]: number } = {
+      'хаски': 25000,
+      'немецкая овчарка': 20000,
+      'лабрадор': 18000,
+      'золотистый ретривер': 22000,
+      'бульдог': 30000,
+      'чихуахуа': 15000,
+      'йоркширский терьер': 20000,
+      'мопс': 18000,
+      'шпиц': 17000,
+      'такса': 12000,
+      'бишон фризе': 18000,
+      'пудель': 16000,
+      'корги': 28000,
+      'самоед': 27000,
+      'акита': 25000,
+      'алабай': 15000,
+      'кавказская овчарка': 18000,
+      'бигль': 15000,
+      'боксер': 16000,
+      'доберман': 20000,
+      'ротвейлер': 18000,
+      'джек рассел терьер': 14000,
+      'французский бульдог': 35000,
+    };
+
+    let basePrice = 15000;
+
+    if (formData.breed) {
+      const breedLower = formData.breed.toLowerCase();
+      for (const [breed, price] of Object.entries(breedPrices)) {
+        if (breedLower.includes(breed)) {
+          basePrice = price;
+          break;
+        }
+      }
+    }
+
+    if (formData.rank) {
+      const rankLower = formData.rank.toLowerCase();
+      if (rankLower.includes('чемпион')) basePrice *= 1.5;
+      else if (rankLower.includes('кандидат')) basePrice *= 1.3;
+      else if (rankLower.includes('элит')) basePrice *= 1.4;
+    }
+
+    const age = parseInt(formData.age);
+    if (age >= 2 && age <= 6) {
+      basePrice *= 1.1;
+    } else if (age > 8) {
+      basePrice *= 0.8;
+    }
+
+    setRecommendedPrice(Math.round(basePrice));
+  };
+
+  useEffect(() => {
+    if (formData.breed || formData.rank || formData.age) {
+      calculateRecommendedPrice();
+    }
+  }, [formData.breed, formData.rank, formData.age]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -237,17 +300,33 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Цена за вязку (₽)</label>
+              <div className="col-span-2">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Цена за вязку (₽)</label>
+                  {recommendedPrice && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, breeding_price: recommendedPrice.toString() })}
+                      className="text-xs text-pink-600 hover:text-pink-700 font-medium flex items-center gap-1"
+                    >
+                      <Icon name="Sparkles" size={14} />
+                      Рекомендуемая: {recommendedPrice.toLocaleString('ru-RU')} ₽
+                    </button>
+                  )}
+                </div>
                 <input
                   type="number"
                   value={formData.breeding_price}
                   onChange={(e) => setFormData({ ...formData, breeding_price: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="10000"
+                  placeholder={recommendedPrice ? recommendedPrice.toString() : "10000"}
                   min="0"
                 />
-                <p className="text-xs text-gray-500 mt-1">Оставьте пустым, если бесплатно или договорная</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {recommendedPrice 
+                    ? `Рекомендация основана на породе, ранге и возрасте. Вы можете изменить цену.`
+                    : 'Оставьте пустым, если бесплатно или договорная'}
+                </p>
               </div>
             </div>
 

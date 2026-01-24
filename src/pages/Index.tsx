@@ -294,11 +294,14 @@ export default function Index() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Город</label>
-                <select
+                <input
+                  list="filter-cities-list"
                   value={filters.city}
                   onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+                  placeholder="Начните вводить город..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                >
+                />
+                <datalist id="filter-cities-list">
                   <option value="">Все города</option>
                   <option value="Москва">Москва</option>
                   <option value="Санкт-Петербург">Санкт-Петербург</option>
@@ -397,16 +400,19 @@ export default function Index() {
                   <option value="Прокопьевск">Прокопьевск</option>
                   <option value="Рыбинск">Рыбинск</option>
                   <option value="Великий Новгород">Великий Новгород</option>
-                </select>
+                </datalist>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Порода</label>
-                <select
+                <input
+                  list="filter-breeds-list"
                   value={filters.breed}
                   onChange={(e) => setFilters({ ...filters, breed: e.target.value })}
+                  placeholder="Начните вводить породу..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                >
+                />
+                <datalist id="filter-breeds-list">
                   <option value="">Все породы</option>
                   <option value="Австралийская овчарка">Австралийская овчарка</option>
                   <option value="Австралийский терьер">Австралийский терьер</option>
@@ -507,7 +513,7 @@ export default function Index() {
                   <option value="Японский хин">Японский хин</option>
                   <option value="Метис">Метис</option>
                   <option value="Другая порода">Другая порода</option>
-                </select>
+                </datalist>
               </div>
 
               <div>

@@ -248,11 +248,14 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Порода</label>
-                <select
+                <input
+                  list="breeds-list"
                   value={formData.breed}
                   onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
+                  placeholder="Начните вводить породу..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                >
+                />
+                <datalist id="breeds-list">
                   <option value="">Выберите породу</option>
                   <option value="Австралийская овчарка">Австралийская овчарка</option>
                   <option value="Австралийский терьер">Австралийский терьер</option>
@@ -353,7 +356,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
                   <option value="Японский хин">Японский хин</option>
                   <option value="Метис">Метис</option>
                   <option value="Другая порода">Другая порода</option>
-                </select>
+                </datalist>
               </div>
 
               <div>
@@ -399,11 +402,14 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Город</label>
-                <select
+                <input
+                  list="cities-list"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  placeholder="Начните вводить город..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                >
+                />
+                <datalist id="cities-list">
                   <option value="">Выберите город</option>
                   <option value="Москва">Москва</option>
                   <option value="Санкт-Петербург">Санкт-Петербург</option>
@@ -502,7 +508,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
                   <option value="Прокопьевск">Прокопьевск</option>
                   <option value="Рыбинск">Рыбинск</option>
                   <option value="Великий Новгород">Великий Новгород</option>
-                </select>
+                </datalist>
               </div>
 
               <div className="col-span-2">

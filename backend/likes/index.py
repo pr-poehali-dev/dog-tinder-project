@@ -304,9 +304,9 @@ def get_chats_or_messages(event: dict, conn) -> dict:
                 JOIN {schema}.pets p2 ON m.pet2_id = p2.id
                 JOIN {schema}.users u1 ON p1.user_id = u1.id
                 JOIN {schema}.users u2 ON p2.user_id = u2.id
-                WHERE u1.id = %s OR u2.id = %s
-                ORDER BY COALESCE(last_message_at, c.created_at) DESC
-            ''', (user_id, user_id))
+                WHERE u1.id = {int(user_id)} OR u2.id = {int(user_id)}
+                ORDER BY c.created_at DESC
+            ''')
             
             chats = cur.fetchall()
             result = []

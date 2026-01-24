@@ -33,6 +33,7 @@ interface Pet {
   photo_url?: string;
   verification_paid?: boolean;
   passport_verified?: boolean;
+  is_active?: boolean;
   created_at?: string;
 }
 
@@ -97,7 +98,7 @@ export default function Profile() {
   };
 
   const handleDeletePet = async (petId: number) => {
-    if (!confirm('Удалить объявление? Это действие нельзя отменить.')) return;
+    if (!confirm('Удалить объявление навсегда? Это действие нельзя отменить.')) return;
     
     try {
       const response = await fetch(`${PETS_API_URL}?pet_id=${petId}`, {
@@ -110,6 +111,23 @@ export default function Profile() {
     } catch (error) {
       console.error('Failed to delete pet:', error);
       alert('Не удалось удалить объявление');
+    }
+  };
+
+  const handleToggleActive = async (petId: number, isActive: boolean) => {
+    try {
+      const response = await fetch(`${PETS_API_URL}?pet_id=${petId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pet_id: petId, is_active: !isActive }),
+      });
+      
+      if (response.ok) {
+        loadPets();
+      }
+    } catch (error) {
+      console.error('Failed to toggle pet status:', error);
+      alert('Не удалось изменить статус объявления');
     }
   };
 
@@ -369,7 +387,12 @@ export default function Profile() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {pets.map((pet) => (
-                  <div key={pet.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div 
+                    key={pet.id} 
+                    className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
+                      pet.is_active === false ? 'bg-gray-50 border-gray-300 opacity-60' : 'border-gray-200'
+                    }`}
+                  >
                     <div className="flex gap-4">
                       {pet.photo_url ? (
                         <img src={pet.photo_url} alt={pet.name} className="w-20 h-20 rounded-lg object-cover" />
@@ -379,7 +402,12 @@ export default function Profile() {
                         </div>
                       )}
                       <div className="flex-1">
-                        <h3 className="font-bold text-lg text-gray-800">{pet.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-lg text-gray-800">{pet.name}</h3>
+                          {pet.is_active === false && (
+                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Скрыто</span>
+                          )}
+                        </div>
                         {pet.breed && <p className="text-sm text-gray-600">{pet.breed}</p>}
                         <div className="flex gap-2 mt-2 flex-wrap">
                           {pet.age && (
@@ -397,25 +425,50 @@ export default function Profile() {
                             </span>
                           )}
                         </div>
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                            onClick={() => handleEditPet(pet)}
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 text-gray-700 hover:text-pink-600 hover:border-pink-300"
-                          >
-                            <Icon name="Edit" size={14} className="mr-1" />
-                            Редактировать
-                          </Button>
-                          <Button
-                            onClick={() => handleDeletePet(pet.id)}
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                          >
-                            <Icon name="Trash2" size={14} className="mr-1" />
-                            Удалить
-                          </Button>
+                        <div className="flex gap-2 mt-3 flex-wrap">
+                          {pet.is_active !== false ? (
+                            <>
+                              <Button
+                                onClick={() => handleEditPet(pet)}
+                                size="sm"
+                                variant="outline"
+                                className="text-gray-700 hover:text-pink-600 hover:border-pink-300"
+                              >
+                                <Icon name="Edit" size={14} className="mr-1" />
+                                Редактировать
+                              </Button>
+                              <Button
+                                onClick={() => handleToggleActive(pet.id, pet.is_active !== false)}
+                                size="sm"
+                                variant="outline"
+                                className="text-orange-600 hover:text-orange-700 border-orange-200 hover:border-orange-300"
+                              >
+                                <Icon name="EyeOff" size={14} className="mr-1" />
+                                Скрыть
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                onClick={() => handleToggleActive(pet.id, pet.is_active !== false)}
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
+                              >
+                                <Icon name="Eye" size={14} className="mr-1" />
+                                Показать
+                              </Button>
+                              <Button
+                                onClick={() => handleDeletePet(pet.id)}
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                              >
+                                <Icon name="Trash2" size={14} className="mr-1" />
+                                Удалить
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

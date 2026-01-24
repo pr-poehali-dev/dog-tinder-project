@@ -98,8 +98,8 @@ def get_pets(event: dict, conn) -> dict:
         if user_id:
             cur.execute('''
                 SELECT * FROM t_p11971418_dog_tinder_project.pets
-                WHERE user_id = %s AND is_active = true
-                ORDER BY created_at DESC
+                WHERE user_id = %s
+                ORDER BY is_active DESC, created_at DESC
             ''', (user_id,))
         else:
             cur.execute('''
@@ -354,7 +354,7 @@ def update_pet(event: dict, conn) -> dict:
     update_fields = []
     update_values = []
     
-    for field in ['name', 'breed', 'age', 'gender', 'rank', 'city', 'description', 'photo_url']:
+    for field in ['name', 'breed', 'age', 'gender', 'rank', 'city', 'description', 'photo_url', 'is_active']:
         if field in body:
             update_fields.append(f"{field} = %s")
             update_values.append(body[field])

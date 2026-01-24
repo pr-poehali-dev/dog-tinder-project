@@ -44,6 +44,8 @@ export default function Index() {
     minAge: 0,
     maxAge: 15,
     maxDistance: 100,
+    minPrice: 0,
+    maxPrice: 100000,
   });
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('swipe');
@@ -224,6 +226,13 @@ export default function Index() {
       });
     }
 
+    if (filters.minPrice > 0 || filters.maxPrice < 100000) {
+      filtered = filtered.filter((pet) => {
+        if (!pet.breeding_price) return filters.minPrice === 0;
+        return pet.breeding_price >= filters.minPrice && pet.breeding_price <= filters.maxPrice;
+      });
+    }
+
     setFilteredPets(filtered);
   };
 
@@ -236,6 +245,8 @@ export default function Index() {
       minAge: 0,
       maxAge: 15,
       maxDistance: 100,
+      minPrice: 0,
+      maxPrice: 100000,
     });
   };
 
@@ -366,6 +377,33 @@ export default function Index() {
                   onChange={(e) => setFilters({ ...filters, maxDistance: Number(e.target.value) })}
                   className="w-full"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Цена за вязку: {filters.minPrice.toLocaleString('ru-RU')} - {filters.maxPrice.toLocaleString('ru-RU')} ₽
+                </label>
+                <div className="flex gap-4 items-center">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100000"
+                    step="5000"
+                    value={filters.minPrice}
+                    onChange={(e) => setFilters({ ...filters, minPrice: Number(e.target.value) })}
+                    className="flex-1"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="100000"
+                    step="5000"
+                    value={filters.maxPrice}
+                    onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
+                    className="flex-1"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">0 ₽ = бесплатно или договорная</p>
               </div>
             </div>
 

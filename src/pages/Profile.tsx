@@ -36,6 +36,10 @@ interface Pet {
   created_at?: string;
 }
 
+interface EditingPet extends Pet {
+  isNew: boolean;
+}
+
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -46,6 +50,7 @@ export default function Profile() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [showPetForm, setShowPetForm] = useState(false);
   const [isLoadingPets, setIsLoadingPets] = useState(false);
+  const [editingPet, setEditingPet] = useState<EditingPet | null>(null);
 
   const yandexAuth = useYandexAuth({
     apiUrls: {
@@ -89,6 +94,39 @@ export default function Profile() {
     } finally {
       setIsLoadingPets(false);
     }
+  };
+
+  const handleDeletePet = async (petId: number) => {
+    if (!confirm('Удалить объявление? Это действие нельзя отменить.')) return;
+    
+    try {
+      const response = await fetch(`${PETS_API_URL}?pet_id=${petId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setPets(pets.filter(p => p.id !== petId));
+      }
+    } catch (error) {
+      console.error('Failed to delete pet:', error);
+      alert('Не удалось удалить объявление');
+    }
+  };
+
+  const handleEditPet = (pet: Pet) => {
+    setEditingPet({ ...pet, isNew: false });
+    setShowPetForm(true);
+  };
+
+  const handleAddNewPet = () => {
+    if (!user) return;
+    setEditingPet({
+      id: 0,
+      user_id: user.id,
+      name: '',
+      isNew: true
+    });
+    setShowPetForm(true);
   };
 
   const handleLogout = () => {
@@ -313,7 +351,7 @@ export default function Profile() {
           <div className="bg-white rounded-2xl shadow-lg p-8 mt-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Мои питомцы</h2>
-              <Button onClick={() => setShowPetForm(true)}>
+              <Button onClick={handleAddNewPet}>
                 <Icon name="Plus" size={20} />
                 Добавить питомца
               </Button>
@@ -359,6 +397,26 @@ export default function Profile() {
                             </span>
                           )}
                         </div>
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            onClick={() => handleEditPet(pet)}
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-gray-700 hover:text-pink-600 hover:border-pink-300"
+                          >
+                            <Icon name="Edit" size={14} className="mr-1" />
+                            Редактировать
+                          </Button>
+                          <Button
+                            onClick={() => handleDeletePet(pet.id)}
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                          >
+                            <Icon name="Trash2" size={14} className="mr-1" />
+                            Удалить
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -379,14 +437,19 @@ export default function Profile() {
           </div>
         </div>
 
-        {showPetForm && (
+        {showPetForm && editingPet && (
           <PetForm
             userId={user.id}
+            editingPet={editingPet.isNew ? undefined : editingPet}
             onSuccess={() => {
               setShowPetForm(false);
+              setEditingPet(null);
               loadPets();
             }}
-            onCancel={() => setShowPetForm(false)}
+            onCancel={() => {
+              setShowPetForm(false);
+              setEditingPet(null);
+            }}
           />
         )}
       </div>

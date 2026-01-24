@@ -4,24 +4,38 @@ import Icon from '@/components/ui/icon';
 
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
 
+interface Pet {
+  id: number;
+  user_id: number;
+  name: string;
+  breed?: string;
+  age?: number;
+  gender?: string;
+  rank?: string;
+  city?: string;
+  description?: string;
+  photo_url?: string;
+}
+
 interface PetFormProps {
   userId: number;
+  editingPet?: Pet;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export default function PetForm({ userId, onSuccess, onCancel }: PetFormProps) {
+export default function PetForm({ userId, editingPet, onSuccess, onCancel }: PetFormProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    breed: '',
-    age: '',
-    gender: 'male',
-    rank: '',
-    city: '',
-    description: '',
+    name: editingPet?.name || '',
+    breed: editingPet?.breed || '',
+    age: editingPet?.age?.toString() || '',
+    gender: editingPet?.gender || 'male',
+    rank: editingPet?.rank || '',
+    city: editingPet?.city || '',
+    description: editingPet?.description || '',
   });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string>('');
+  const [photoPreview, setPhotoPreview] = useState<string>(editingPet?.photo_url || '');
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [wantsVerification, setWantsVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,21 +80,24 @@ export default function PetForm({ userId, onSuccess, onCancel }: PetFormProps) {
         photoUrl = photoData.url;
       }
 
-      const petResponse = await fetch(PETS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          name: formData.name,
-          breed: formData.breed,
-          age: parseInt(formData.age) || null,
-          gender: formData.gender,
-          rank: formData.rank,
-          city: formData.city,
-          description: formData.description,
-          photo_url: photoUrl,
-        }),
-      });
+      const petResponse = await fetch(
+        editingPet ? `${PETS_API_URL}?pet_id=${editingPet.id}` : PETS_API_URL,
+        {
+          method: editingPet ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            name: formData.name,
+            breed: formData.breed,
+            age: parseInt(formData.age) || null,
+            gender: formData.gender,
+            rank: formData.rank,
+            city: formData.city,
+            description: formData.description,
+            photo_url: photoUrl || (editingPet?.photo_url || ''),
+          }),
+        }
+      );
       const petData = await petResponse.json();
 
       if (documentFile && petData.pet) {
@@ -126,7 +143,9 @@ export default function PetForm({ userId, onSuccess, onCancel }: PetFormProps) {
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Добавить питомца</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {editingPet ? 'Редактировать питомца' : 'Добавить питомца'}
+            </h2>
             <button onClick={onCancel} className="text-gray-500 hover:text-gray-700">
               <Icon name="X" size={24} />
             </button>

@@ -24,6 +24,15 @@ const SYSTEM_PROMPT = `Ты — эксперт-консультант по вя�
 
 Помни: ты помогаешь реальным людям принимать важные решения о здоровье и разведении их питомцев.`;
 
+const QUICK_QUESTIONS = [
+  'Когда лучше вязать собаку в первый раз?',
+  'Какие анализы нужны перед вязкой?',
+  'Как проходит процесс вязки?',
+  'Что такое алиментные щенки?',
+  'Нужна ли родословная РКФ?',
+  'Как выбрать подходящего партнёра?',
+];
+
 export default function ChatGPTPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white">
@@ -67,6 +76,7 @@ export default function ChatGPTPage() {
             systemPrompt={SYSTEM_PROMPT}
             title="Чат с экспертом"
             placeholder="Задайте вопрос о вязке, здоровье собаки или процессе..."
+            quickQuestions={QUICK_QUESTIONS}
           />
         </div>
       </div>

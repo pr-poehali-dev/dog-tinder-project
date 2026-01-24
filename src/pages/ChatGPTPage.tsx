@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { useChatGPT } from '@/components/extensions/chatgpt-polza/useChatGPT';
 
-const API_URL = 'https://functions.poehali.dev/6d3cd242-9636-4e54-8c4e-4a4eef817b6f';
+const API_URL = 'https://functions.poehali.dev/c88bcdc8-6a9a-4d02-900e-980d8f345323';
 
 const SYSTEM_PROMPT = `Ты — Анна, эксперт-консультант по вязке собак на платформе TinDog. 
 

@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "Test generate endpoint",
+      "method": "POST",
+      "path": "/?action=generate",
+      "body": {
+        "messages": [
+          {"role": "user", "content": "Привет"}
+        ],
+        "model": "openai/gpt-4o-mini"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "content": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test models endpoint",
+      "method": "GET",
+      "path": "/?action=models",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "models": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

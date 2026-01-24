@@ -155,7 +155,7 @@ export default function Chats() {
                 <Icon name="Heart" size={24} />
               </Button>
               <Button variant="ghost" onClick={() => (window.location.href = '/chatgpt')} title="Поддержка">
-                <Icon name="Bot" size={24} />
+                <Icon name="Headphones" size={24} />
               </Button>
               <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>
                 <Icon name="User" size={24} />

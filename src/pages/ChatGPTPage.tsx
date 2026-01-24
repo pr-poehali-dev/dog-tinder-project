@@ -88,6 +88,17 @@ export default function ChatGPTPage() {
           timestamp: new Date(),
         },
       ]);
+    } else {
+      console.error('ChatGPT error:', result.error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'Извините, произошла ошибка. Попробуйте еще раз 😔',
+          timestamp: new Date(),
+        },
+      ]);
     }
   };
 

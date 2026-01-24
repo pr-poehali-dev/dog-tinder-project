@@ -147,11 +147,12 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
       }
 
       const petResponse = await fetch(
-        editingPet ? `${PETS_API_URL}?pet_id=${editingPet.id}` : PETS_API_URL,
+        PETS_API_URL,
         {
           method: editingPet ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            ...(editingPet && { pet_id: editingPet.id }),
             user_id: userId,
             name: formData.name,
             breed: formData.breed,

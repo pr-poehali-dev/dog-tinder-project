@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useNotifications } from '@/hooks/useNotifications';
 import { requestNotificationPermission } from '@/utils/notifications';
 import SwipeCard from '@/components/SwipeCard';
+import confetti from 'canvas-confetti';
 
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
 const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
@@ -101,6 +102,31 @@ export default function Index() {
           if (navigator.vibrate) {
             navigator.vibrate([100, 50, 100, 50, 200]);
           }
+          
+          confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#ff69b4', '#ff1493', '#ff6347', '#ffa500', '#ffb6c1']
+          });
+          
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              angle: 60,
+              spread: 55,
+              origin: { x: 0 },
+              colors: ['#ff69b4', '#ff1493', '#ff6347', '#ffa500', '#ffb6c1']
+            });
+            confetti({
+              particleCount: 100,
+              angle: 120,
+              spread: 55,
+              origin: { x: 1 },
+              colors: ['#ff69b4', '#ff1493', '#ff6347', '#ffa500', '#ffb6c1']
+            });
+          }, 200);
+          
           alert('🎉 Взаимная симпатия! Теперь вы можете писать друг другу!');
         }
       }

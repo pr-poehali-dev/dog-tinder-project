@@ -5,6 +5,7 @@ import Icon from '@/components/ui/icon';
 import { useNotifications } from '@/hooks/useNotifications';
 
 const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
+const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
 
 interface User {
   id: number;
@@ -30,6 +31,7 @@ interface IncomingLike {
   from_pet_breed?: string;
   from_pet_age?: number;
   from_user_name?: string;
+  is_mutual?: boolean;
   created_at: string;
 }
 
@@ -50,6 +52,7 @@ interface Match {
 
 export default function Likes() {
   const [user, setUser] = useState<User | null>(null);
+  const [myPetId, setMyPetId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'outgoing' | 'incoming' | 'matches'>('outgoing');
   const [outgoingLikes, setOutgoingLikes] = useState<Like[]>([]);
   const [incomingLikes, setIncomingLikes] = useState<IncomingLike[]>([]);
@@ -62,10 +65,23 @@ export default function Likes() {
     if (savedUser) {
       const userData = JSON.parse(savedUser);
       setUser(userData);
+      loadMyPet(userData.id);
       loadLikes(userData.id);
       markAsRead();
     }
   }, [markAsRead]);
+
+  const loadMyPet = async (userId: number) => {
+    try {
+      const response = await fetch(`${PETS_API_URL}?user_id=${userId}`);
+      const pets = await response.json();
+      if (pets.length > 0) {
+        setMyPetId(pets[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load my pet:', error);
+    }
+  };
 
   const loadLikes = async (userId: number) => {
     setIsLoading(true);
@@ -83,6 +99,30 @@ export default function Likes() {
       console.error('Failed to load likes:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLikeBack = async (fromPetId: number, toPetId: number) => {
+    try {
+      const response = await fetch(LIKES_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from_pet_id: toPetId, to_pet_id: fromPetId }),
+      });
+      const data = await response.json();
+
+      if (data.success && user) {
+        loadLikes(user.id);
+        
+        if (data.is_match) {
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100, 50, 200]);
+          }
+          alert('🎉 Взаимная симпатия! Теперь вы можете писать друг другу!');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to like back:', error);
     }
   };
 
@@ -141,14 +181,14 @@ export default function Likes() {
             onClick={() => setActiveTab('incoming')}
             className="flex-1"
           >
-            Мне лайкнули ({incomingLikes.length})
+            Меня лайкнули ({incomingLikes.length})
           </Button>
           <Button
             variant={activeTab === 'matches' ? 'default' : 'outline'}
             onClick={() => setActiveTab('matches')}
             className="flex-1"
           >
-            Матчи ({matches.length})
+            Мэтчи ({matches.length})
           </Button>
         </div>
 
@@ -209,15 +249,31 @@ export default function Likes() {
                             <Icon name="Dog" size={48} className="text-white opacity-50" />
                           </div>
                         )}
-                        <Badge className="absolute top-3 right-3 bg-pink-500 text-white">
-                          <Icon name="Heart" size={14} className="mr-1" />
-                          Новый лайк
-                        </Badge>
+                        {like.is_mutual ? (
+                          <Badge className="absolute top-3 right-3 bg-green-500 text-white">
+                            <Icon name="Heart" size={14} className="mr-1" />
+                            Взаимно
+                          </Badge>
+                        ) : (
+                          <Badge className="absolute top-3 right-3 bg-pink-500 text-white">
+                            <Icon name="Heart" size={14} className="mr-1" />
+                            Новый лайк
+                          </Badge>
+                        )}
                       </div>
                       <div className="p-4">
                         <h3 className="text-lg font-bold text-gray-800">{like.from_pet_name}</h3>
                         {like.from_pet_breed && <p className="text-sm text-gray-600">{like.from_pet_breed}</p>}
                         {like.from_user_name && <p className="text-xs text-gray-500 mt-2">Владелец: {like.from_user_name}</p>}
+                        {!like.is_mutual && myPetId && (
+                          <Button
+                            onClick={() => handleLikeBack(like.from_pet_id, myPetId)}
+                            className="w-full mt-3 bg-pink-600 hover:bg-pink-700"
+                          >
+                            <Icon name="Heart" size={16} className="mr-2" />
+                            Лайкнуть в ответ
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))

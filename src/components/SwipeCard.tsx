@@ -50,6 +50,8 @@ export default function SwipeCard({ pet, onSwipeLeft, onSwipeRight, style }: Swi
       }
     },
     onSwiped: (eventData) => {
+      setIsDragging(false);
+      
       if (Math.abs(eventData.deltaX) > 120) {
         setIsExiting(true);
         setOffsetX(eventData.deltaX > 0 ? 1000 : -1000);
@@ -60,9 +62,12 @@ export default function SwipeCard({ pet, onSwipeLeft, onSwipeRight, style }: Swi
           } else {
             onSwipeLeft(pet.id);
           }
+          setIsExiting(false);
+          setOffsetX(0);
+          setOffsetY(0);
+          setSwipeDirection(null);
         }, 300);
       } else {
-        setIsDragging(false);
         setOffsetX(0);
         setOffsetY(0);
         setSwipeDirection(null);

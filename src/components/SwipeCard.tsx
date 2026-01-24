@@ -95,8 +95,15 @@ export default function SwipeCard({ pet, onSwipeLeft, onSwipeRight, style }: Swi
             className="absolute top-8 left-8 z-20 pointer-events-none"
             style={{ opacity: labelOpacity }}
           >
-            <div className="text-8xl animate-pulse drop-shadow-2xl">
-              💚
+            <div className="relative">
+              <div className="absolute inset-0 blur-2xl">
+                <Icon name="Heart" size={120} className="text-pink-500 animate-ping" />
+              </div>
+              <div className="relative">
+                <Icon name="Heart" size={120} className="text-pink-500 fill-pink-500 animate-pulse drop-shadow-2xl" style={{
+                  filter: 'drop-shadow(0 0 20px rgba(236, 72, 153, 0.8))'
+                }} />
+              </div>
             </div>
           </div>
         )}
@@ -105,8 +112,15 @@ export default function SwipeCard({ pet, onSwipeLeft, onSwipeRight, style }: Swi
             className="absolute top-8 right-8 z-20 pointer-events-none"
             style={{ opacity: labelOpacity }}
           >
-            <div className="text-8xl animate-pulse drop-shadow-2xl">
-              💔
+            <div className="relative">
+              <div className="absolute inset-0 blur-2xl">
+                <Icon name="X" size={120} className="text-red-500 animate-ping" />
+              </div>
+              <div className="relative">
+                <Icon name="X" size={120} className="text-red-500 stroke-[4] animate-pulse drop-shadow-2xl" style={{
+                  filter: 'drop-shadow(0 0 20px rgba(239, 68, 68, 0.8))'
+                }} />
+              </div>
             </div>
           </div>
         )}

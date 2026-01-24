@@ -280,7 +280,7 @@ export default function Index() {
                   </span>
                 )}
               </Button>
-              <Button variant="ghost" onClick={() => (window.location.href = '/chatgpt')}>
+              <Button variant="ghost" onClick={() => (window.location.href = '/chatgpt')} title="Поддержка">
                 <Icon name="Bot" size={24} />
               </Button>
               <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>

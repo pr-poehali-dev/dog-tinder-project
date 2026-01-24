@@ -27,6 +27,9 @@ interface GPTModel {
 interface ChatGPTPlaygroundProps {
   apiUrl: string;
   defaultModel?: string;
+  systemPrompt?: string;
+  title?: string;
+  placeholder?: string;
 }
 
 // =============================================================================
@@ -110,10 +113,13 @@ function ModelDropdown({
 export function ChatGPTPlayground({
   apiUrl,
   defaultModel = "openai/gpt-4o-mini",
+  systemPrompt: initialSystemPrompt = "",
+  title = "ChatGPT Playground",
+  placeholder = "Введите сообщение...",
 }: ChatGPTPlaygroundProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [systemPrompt, setSystemPrompt] = useState("");
+  const [systemPrompt, setSystemPrompt] = useState(initialSystemPrompt);
   const [selectedModel, setSelectedModel] = useState(defaultModel);
   const [models, setModels] = useState<GPTModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -183,7 +189,7 @@ export function ChatGPTPlayground({
       {/* Левая панель - Настройки */}
       <div className="w-80 border-r border-gray-700 flex flex-col">
         <div className="p-4 border-b border-gray-700">
-          <h1 className="text-lg font-medium">Песочница</h1>
+          <h1 className="text-lg font-medium">{title}</h1>
         </div>
 
         <div className="p-4 space-y-4 flex-1 overflow-y-auto">
@@ -199,16 +205,18 @@ export function ChatGPTPlayground({
           </div>
 
           {/* Системное сообщение */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Системное сообщение</label>
-            <textarea
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder="Опишите поведение модели..."
-              rows={6}
-              className="w-full px-3 py-2 bg-[#2d2d2d] border border-gray-600 rounded text-sm resize-none focus:outline-none focus:border-green-500 placeholder-gray-500"
-            />
-          </div>
+          {!initialSystemPrompt && (
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Системное сообщение</label>
+              <textarea
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder="Опишите поведение модели..."
+                rows={6}
+                className="w-full px-3 py-2 bg-[#2d2d2d] border border-gray-600 rounded text-sm resize-none focus:outline-none focus:border-green-500 placeholder-gray-500"
+              />
+            </div>
+          )}
         </div>
 
         {/* Кнопка очистки */}
@@ -290,7 +298,7 @@ export function ChatGPTPlayground({
                     handleSubmit(e);
                   }
                 }}
-                placeholder="Введите сообщение..."
+                placeholder={placeholder}
                 disabled={isLoading}
                 rows={1}
                 className="flex-1 bg-transparent text-sm resize-none focus:outline-none placeholder-gray-500 disabled:opacity-50"

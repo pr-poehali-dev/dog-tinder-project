@@ -31,64 +31,98 @@ interface SwipeCardProps {
 export default function SwipeCard({ pet, onSwipeLeft, onSwipeRight, style }: SwipeCardProps) {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   const handlers = useSwipeable({
     onSwiping: (eventData) => {
       setIsDragging(true);
       setOffsetX(eventData.deltaX);
+      setOffsetY(eventData.deltaY * 0.2);
       
-      if (eventData.deltaX > 50) {
+      if (eventData.deltaX > 80) {
         setSwipeDirection('right');
-      } else if (eventData.deltaX < -50) {
+      } else if (eventData.deltaX < -80) {
         setSwipeDirection('left');
       } else {
         setSwipeDirection(null);
       }
     },
     onSwiped: (eventData) => {
-      setIsDragging(false);
-      
-      if (eventData.deltaX > 100) {
-        onSwipeRight(pet.id);
-      } else if (eventData.deltaX < -100) {
-        onSwipeLeft(pet.id);
+      if (Math.abs(eventData.deltaX) > 120) {
+        setIsExiting(true);
+        setOffsetX(eventData.deltaX > 0 ? 1000 : -1000);
+        
+        setTimeout(() => {
+          if (eventData.deltaX > 0) {
+            onSwipeRight(pet.id);
+          } else {
+            onSwipeLeft(pet.id);
+          }
+        }, 300);
+      } else {
+        setIsDragging(false);
+        setOffsetX(0);
+        setOffsetY(0);
+        setSwipeDirection(null);
       }
-      
-      setOffsetX(0);
-      setSwipeDirection(null);
     },
     trackMouse: true,
     trackTouch: true,
   });
 
-  const rotation = offsetX * 0.05;
-  const opacity = 1 - Math.abs(offsetX) / 400;
+  const rotation = offsetX * 0.08;
+  const scale = isDragging ? 1.05 : 1;
+  const opacity = Math.max(0.3, 1 - Math.abs(offsetX) / 500);
+  const labelOpacity = Math.min(1, Math.abs(offsetX) / 100);
 
   return (
     <div
       {...handlers}
-      className="absolute top-0 left-0 w-full cursor-grab active:cursor-grabbing"
+      className="absolute top-0 left-0 w-full cursor-grab active:cursor-grabbing touch-none"
       style={{
-        transform: `translateX(${offsetX}px) rotate(${rotation}deg)`,
-        transition: isDragging ? 'none' : 'transform 0.3s ease-out',
-        opacity: isDragging ? opacity : 1,
+        transform: `translateX(${offsetX}px) translateY(${offsetY}px) rotate(${rotation}deg) scale(${scale})`,
+        transition: isDragging || isExiting ? 'none' : 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        opacity,
         ...style,
       }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-sm mx-auto">
-        {/* Индикаторы свайпа */}
+      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-sm mx-auto relative">
+        {/* Лейблы LIKE / NOPE */}
         {swipeDirection === 'right' && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-            <div className="animate-ping absolute inline-flex h-32 w-32 rounded-full bg-green-400 opacity-75"></div>
-            <div className="text-9xl animate-bounce">❤️</div>
+          <div 
+            className="absolute top-8 left-8 z-20 pointer-events-none"
+            style={{ opacity: labelOpacity }}
+          >
+            <div className="text-6xl font-black text-green-500 border-8 border-green-500 rounded-2xl px-6 py-2 rotate-[-20deg] shadow-2xl">
+              LIKE
+            </div>
           </div>
         )}
         {swipeDirection === 'left' && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-            <div className="animate-ping absolute inline-flex h-32 w-32 rounded-full bg-red-400 opacity-75"></div>
-            <div className="text-9xl animate-pulse">💔</div>
+          <div 
+            className="absolute top-8 right-8 z-20 pointer-events-none"
+            style={{ opacity: labelOpacity }}
+          >
+            <div className="text-6xl font-black text-red-500 border-8 border-red-500 rounded-2xl px-6 py-2 rotate-[20deg] shadow-2xl">
+              NOPE
+            </div>
           </div>
+        )}
+
+        {/* Фоновое свечение */}
+        {swipeDirection === 'right' && (
+          <div 
+            className="absolute inset-0 z-10 bg-green-400/20 pointer-events-none transition-opacity duration-200"
+            style={{ opacity: labelOpacity * 0.5 }}
+          />
+        )}
+        {swipeDirection === 'left' && (
+          <div 
+            className="absolute inset-0 z-10 bg-red-400/20 pointer-events-none transition-opacity duration-200"
+            style={{ opacity: labelOpacity * 0.5 }}
+          />
         )}
 
         {/* Фото */}

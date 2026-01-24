@@ -98,6 +98,9 @@ export default function Index() {
       if (data.success) {
         setLikedPets(prev => new Set([...prev, petId]));
         if (data.is_match) {
+          if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100, 50, 200]);
+          }
           alert('🎉 Взаимная симпатия! Теперь вы можете писать друг другу!');
         }
       }

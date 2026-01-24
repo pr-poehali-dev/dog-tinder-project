@@ -89,14 +89,14 @@ export default function SwipeCard({ pet, onSwipeLeft, onSwipeRight, style }: Swi
       }}
     >
       <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-sm mx-auto relative">
-        {/* Лейблы LIKE / NOPE */}
+        {/* Иконки LIKE / NOPE */}
         {swipeDirection === 'right' && (
           <div 
             className="absolute top-8 left-8 z-20 pointer-events-none"
             style={{ opacity: labelOpacity }}
           >
-            <div className="text-6xl font-black text-green-500 border-8 border-green-500 rounded-2xl px-6 py-2 rotate-[-20deg] shadow-2xl">
-              LIKE
+            <div className="text-8xl animate-pulse drop-shadow-2xl">
+              💚
             </div>
           </div>
         )}
@@ -105,8 +105,8 @@ export default function SwipeCard({ pet, onSwipeLeft, onSwipeRight, style }: Swi
             className="absolute top-8 right-8 z-20 pointer-events-none"
             style={{ opacity: labelOpacity }}
           >
-            <div className="text-6xl font-black text-red-500 border-8 border-red-500 rounded-2xl px-6 py-2 rotate-[20deg] shadow-2xl">
-              NOPE
+            <div className="text-8xl animate-pulse drop-shadow-2xl">
+              💔
             </div>
           </div>
         )}

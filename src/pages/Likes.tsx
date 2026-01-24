@@ -20,6 +20,7 @@ interface Like {
   to_pet_photo?: string;
   to_pet_breed?: string;
   to_pet_age?: number;
+  to_pet_breeding_price?: number;
   created_at: string;
 }
 
@@ -30,6 +31,7 @@ interface IncomingLike {
   from_pet_photo?: string;
   from_pet_breed?: string;
   from_pet_age?: number;
+  from_pet_breeding_price?: number;
   from_user_name?: string;
   is_mutual?: boolean;
   created_at: string;
@@ -222,7 +224,14 @@ export default function Likes() {
                       <div className="p-4">
                         <h3 className="text-lg font-bold text-gray-800">{like.to_pet_name}</h3>
                         {like.to_pet_breed && <p className="text-sm text-gray-600">{like.to_pet_breed}</p>}
-                        {like.to_pet_age && <p className="text-sm text-gray-500">{like.to_pet_age} лет</p>}
+                        <div className="flex items-center gap-2 mt-2">
+                          {like.to_pet_age && <p className="text-sm text-gray-500">{like.to_pet_age} лет</p>}
+                          {like.to_pet_breeding_price && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                              💰 {like.to_pet_breeding_price.toLocaleString('ru-RU')} ₽
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -264,6 +273,11 @@ export default function Likes() {
                       <div className="p-4">
                         <h3 className="text-lg font-bold text-gray-800">{like.from_pet_name}</h3>
                         {like.from_pet_breed && <p className="text-sm text-gray-600">{like.from_pet_breed}</p>}
+                        {like.from_pet_breeding_price && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs mt-2">
+                            💰 {like.from_pet_breeding_price.toLocaleString('ru-RU')} ₽
+                          </Badge>
+                        )}
                         {like.from_user_name && <p className="text-xs text-gray-500 mt-2">Владелец: {like.from_user_name}</p>}
                         {!like.is_mutual && myPetId && (
                           <Button

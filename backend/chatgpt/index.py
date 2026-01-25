@@ -1,5 +1,5 @@
 """
-Консультант по вязке собак - чат с ИИ экспертом Анной
+Поддержка TinDog - чат с ассистентом Ариной
 """
 
 import json
@@ -77,106 +77,183 @@ def make_request(endpoint: str, method: str = "POST", data: Optional[dict] = Non
         raise ValueError(error_body.get("error", {}).get("message", str(e)))
 
 
+def get_arina_answer(user_message: str) -> str:
+    """Встроенная база знаний Арины"""
+    msg_lower = user_message.lower()
+    
+    if any(word in msg_lower for word in ['привет', 'здравствуй', 'добрый']):
+        return "Привет! 👋 Я Арина, ассистент поддержки TinDog. Чем могу помочь?"
+    
+    if 'когда' in msg_lower and ('вязать' in msg_lower or 'вязка' in msg_lower) and 'первый' in msg_lower:
+        return """Отличный вопрос! 🐕
+
+Суку рекомендуется вязать:
+• Не раньше 2-й течки (обычно в 1,5-2 года)
+• Оптимально — на 3-ю течку для крупных пород
+• Кобеля можно вязать с 18-24 месяцев
+
+Важно учитывать породу и готовность собаки. Лучше проконсультироваться с ветеринаром перед первой вязкой 👨‍⚕️"""
+    
+    if 'анализ' in msg_lower or 'обследован' in msg_lower:
+        return """Перед вязкой обязательно нужны 🔬:
+
+✅ Общий анализ крови
+✅ Анализ на инфекции (хламидиоз, микоплазмоз)
+✅ Мазок из влагалища (для сук)
+✅ Проверка на генетические заболевания (для некоторых пород)
+
+Также проверьте прививки и обработку от паразитов. На платформе можно заказать сопровождение ветеринара за 7500₽ 💉"""
+    
+    if 'как' in msg_lower and ('вязка' in msg_lower or 'процесс' in msg_lower):
+        return """Процесс вязки обычно проходит так 🐾:
+
+1️⃣ Знакомство собак на нейтральной территории
+2️⃣ Кобель делает садку на суку
+3️⃣ Происходит "замок" (склещивание) на 10-40 минут
+4️⃣ После разъединения собак держат отдельно 30 минут
+5️⃣ Через 1-2 дня проводят контрольную вязку
+
+Важно: не разъединяйте собак силой во время замка! Это естественный процесс 💕"""
+    
+    if 'алимент' in msg_lower or 'щенк' in msg_lower and 'оплат' in msg_lower:
+        return """Алиментные щенки — это форма оплаты вязки 🐶
+
+Владелец кобеля получает:
+• 1 щенка из помёта (обычно первый выбор)
+• Или 2-х щенков, если помёт большой
+
+Вместо денежной оплаты. Всё обсуждается заранее и прописывается в договоре!"""
+    
+    if 'родословн' in msg_lower or 'ркф' in msg_lower:
+        return """О документах РКФ 📋:
+
+• Родословная РКФ нужна, если хотите продавать щенков с документами
+• Без родословной вязка возможна, но щенки будут без документов
+• На платформе можно заказать проверку документов за 500₽
+
+Важно: обе собаки должны иметь родословную для регистрации помёта в РКФ ✅"""
+    
+    if 'партнёр' in msg_lower or 'выбра' in msg_lower:
+        return """При выборе партнёра обращайте внимание на 🔍:
+
+✅ Порода и стандарт (должны совпадать)
+✅ Здоровье и результаты анализов
+✅ Темперамент и характер
+✅ Отсутствие генетических заболеваний
+✅ Успешные предыдущие вязки
+
+На TinDog можно фильтровать кандидатов по всем параметрам!"""
+    
+    if 'платформ' in msg_lower or 'работа' in msg_lower or 'tindog' in msg_lower:
+        return """TinDog — платформа для поиска партнёров для вязки 💕
+
+Как это работает:
+1️⃣ Создаёте профиль своей собаки
+2️⃣ Просматриваете анкеты других собак
+3️⃣ Ставите лайки понравившимся кандидатам
+4️⃣ При взаимной симпатии открывается чат
+5️⃣ Договариваетесь о встрече и вязке
+
+У нас есть проверка документов (500₽) и сопровождение ветеринара (7500₽)!"""
+    
+    if 'беремен' in msg_lower or 'щен' in msg_lower or 'род' in msg_lower:
+        return """О беременности и родах 🤰:
+
+• Беременность длится 58-63 дня
+• Первые признаки: изменение аппетита, сонливость (3-4 неделя)
+• УЗИ можно делать с 21-го дня
+• К родам готовьте место, пелёнки, ножницы, нитки
+• Лучше договориться с ветеринаром о дежурстве
+
+Первые роды могут быть сложными — рекомендую сопровождение специалиста!"""
+    
+    if 'цена' in msg_lower or 'стоимость' in msg_lower or 'сколько' in msg_lower:
+        return """Наши услуги 💰:
+
+✅ Проверка документов — 500₽
+  (проверяем родословную, паспорт, прививки)
+
+✅ Сопровождение ветеринара — 7500₽
+  (консультация, присутствие при вязке, помощь)
+
+Использование платформы — бесплатно! Оплата только за дополнительные услуги."""
+    
+    if 'договор' in msg_lower or 'юридич' in msg_lower:
+        return """О договорах и юридической стороне 📝:
+
+• Рекомендую заключать письменный договор о вязке
+• Укажите условия оплаты (деньги или алиментный щенок)
+• Пропишите ответственность сторон
+• Укажите сроки и место вязки
+
+Договор защищает обе стороны от недопонимания!"""
+    
+    if 'помощь' in msg_lower or 'вопрос' in msg_lower:
+        return """Я помогу с любыми вопросами о 🐕:
+
+• Платформе TinDog
+• Подготовке к вязке
+• Выборе партнёра
+• Документах и родословных
+• Здоровье и анализах
+• Беременности и родах
+• Договорах между владельцами
+
+Просто спрашивайте — отвечу!"""
+    
+    return """Понимаю вас! Если у вас есть конкретный вопрос о:
+• Вязке собак и подготовке к ней
+• Работе платформы TinDog
+• Документах и родословных
+• Здоровье питомца
+• Беременности и родах
+
+Задавайте, постараюсь помочь! Или напишите подробнее, что вас интересует 😊"""
+
+
 def handle_generate(body: dict) -> dict:
     messages = body.get("messages", [])
     if not messages:
         return cors_response(400, {"error": "messages is required"})
 
-    model = body.get("model", DEFAULT_MODEL)
-    temperature = body.get("temperature", 0.7)
-    max_tokens = body.get("max_tokens")
-
-    if not model.startswith("openai/"):
-        return cors_response(400, {
-            "error": "This extension only supports OpenAI models (openai/*)"
-        })
-
-    request_data = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature,
-    }
-
-    if max_tokens:
-        request_data["max_tokens"] = max_tokens
-
-    try:
-        result = make_request("chat/completions", data=request_data)
-
-        choice = result.get("choices", [{}])[0]
-        message = choice.get("message", {})
-        usage = result.get("usage", {})
-
-        return cors_response(200, {
-            "success": True,
-            "content": message.get("content", ""),
-            "model": result.get("model", model),
-            "usage": {
-                "prompt_tokens": usage.get("prompt_tokens", 0),
-                "completion_tokens": usage.get("completion_tokens", 0),
-                "total_tokens": usage.get("total_tokens", 0),
-            },
-            "finish_reason": choice.get("finish_reason", "stop"),
-        })
-    except (TimeoutError, ConnectionError) as e:
-        return cors_response(503, {"error": str(e)})
-    except ValueError as e:
-        return cors_response(400, {"error": str(e)})
-    except Exception as e:
-        return cors_response(500, {"error": str(e)})
+    user_messages = [msg for msg in messages if msg.get("role") == "user"]
+    if not user_messages:
+        return cors_response(400, {"error": "No user message found"})
+    
+    last_user_message = user_messages[-1].get("content", "")
+    answer = get_arina_answer(last_user_message)
+    
+    return cors_response(200, {
+        "success": True,
+        "content": answer,
+        "model": "arina-kb-v1",
+        "usage": {
+            "prompt_tokens": len(last_user_message.split()),
+            "completion_tokens": len(answer.split()),
+            "total_tokens": len(last_user_message.split()) + len(answer.split()),
+        },
+        "finish_reason": "stop",
+    })
 
 
 def handle_models(body: dict) -> dict:
-    try:
-        result = make_request("models", method="GET")
-
-        models = []
-        for model in result.get("data", []):
-            model_id = model.get("id", "")
-            if model_id.startswith("openai/"):
-                models.append({
-                    "id": model_id,
-                    "name": model_id.replace("openai/", "").upper(),
-                })
-
-        return cors_response(200, {
-            "success": True,
-            "models": models,
-            "provider": "polza.ai",
-        })
-    except (TimeoutError, ConnectionError) as e:
-        return cors_response(503, {"error": str(e)})
-    except ValueError as e:
-        return cors_response(400, {"error": str(e)})
-    except Exception as e:
-        return cors_response(500, {"error": str(e)})
+    return cors_response(200, {
+        "success": True,
+        "models": [{
+            "id": "arina-kb-v1",
+            "name": "Арина (встроенная база знаний)",
+        }],
+        "provider": "tindog-local",
+    })
 
 
 def handle_test(body: dict) -> dict:
-    model = body.get("model", DEFAULT_MODEL)
-
-    try:
-        result = make_request("chat/completions", data={
-            "model": model,
-            "messages": [{"role": "user", "content": "Say 'OK' if you can hear me."}],
-            "max_tokens": 10,
-        })
-
-        choice = result.get("choices", [{}])[0]
-        content = choice.get("message", {}).get("content", "")
-
-        return cors_response(200, {
-            "success": True,
-            "message": "ChatGPT connection successful",
-            "response": content,
-            "model": result.get("model", model),
-        })
-    except (TimeoutError, ConnectionError) as e:
-        return cors_response(503, {"error": str(e)})
-    except ValueError as e:
-        return cors_response(400, {"error": str(e)})
-    except Exception as e:
-        return cors_response(500, {"error": str(e)})
+    return cors_response(200, {
+        "success": True,
+        "message": "Arina knowledge base ready",
+        "response": "Привет! Я Арина, готова помочь 👋",
+        "model": "arina-kb-v1",
+    })
 
 
 def handler(event: dict, context) -> dict:

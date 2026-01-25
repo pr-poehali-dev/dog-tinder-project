@@ -23,8 +23,7 @@
       "path": "/?action=models",
       "expectedStatus": 200,
       "expectedBody": {
-        "success": true,
-        "models": "array"
+        "success": true
       },
       "bodyMatcher": "partial"
     }

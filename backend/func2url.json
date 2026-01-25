@@ -1,4 +1,6 @@
 {
+  "telegram-bot-telegram-auth": "https://functions.poehali.dev/c89c74f6-84a8-46e5-af84-c6da33670f50",
+  "telegram-bot-telegram-bot": "https://functions.poehali.dev/1f6dc1fe-9255-4d9b-b8f2-28e6397fd626",
   "unisender-go-unisender": "https://functions.poehali.dev/f23cc9d7-4d77-4b6f-b463-264941528a9d",
   "chatgpt": "https://functions.poehali.dev/c88bcdc8-6a9a-4d02-900e-980d8f345323",
   "chatgpt-polza-chatgpt": "https://functions.poehali.dev/6d3cd242-9636-4e54-8c4e-4a4eef817b6f",

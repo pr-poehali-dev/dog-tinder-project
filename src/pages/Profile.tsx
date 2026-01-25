@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
-import YandexLoginButton from '@/components/extensions/yandex-auth/YandexLoginButton';
-import TelegramLoginButton from '@/components/extensions/telegram-bot/TelegramLoginButton';
-import { useYandexAuth } from '@/components/extensions/yandex-auth/useYandexAuth';
-import { Button } from '@/components/ui/button';
-import Icon from '@/components/ui/icon';
-import PetForm from '@/components/PetForm';
+import { useState, useEffect } from "react";
+import YandexLoginButton from "@/components/extensions/yandex-auth/YandexLoginButton";
+import TelegramLoginButton from "@/components/extensions/telegram-bot/TelegramLoginButton";
+import { useYandexAuth } from "@/components/extensions/yandex-auth/useYandexAuth";
+import { Button } from "@/components/ui/button";
+import Icon from "@/components/ui/icon";
+import PetForm from "@/components/PetForm";
 
-const YANDEX_AUTH_URL = 'https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6';
-const TELEGRAM_BOT_USERNAME = 'YOUR_BOT_USERNAME'; // Замените на username вашего бота
-const PROFILE_API_URL = 'https://functions.poehali.dev/b66d2296-9572-4853-b419-769688fe6e4f';
-const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
+const YANDEX_AUTH_URL =
+  "https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6";
+const TELEGRAM_BOT_USERNAME = "tindog_bot"; // Замените на username вашего бота
+const PROFILE_API_URL =
+  "https://functions.poehali.dev/b66d2296-9572-4853-b419-769688fe6e4f";
+const PETS_API_URL =
+  "https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c";
 
 interface User {
   id: number;
@@ -47,7 +50,7 @@ interface EditingPet extends Pet {
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', city: '' });
+  const [editForm, setEditForm] = useState({ name: "", city: "" });
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
@@ -66,7 +69,7 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
+    const savedUser = localStorage.getItem("user");
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
@@ -74,14 +77,14 @@ export default function Profile() {
 
   useEffect(() => {
     if (yandexAuth.isAuthenticated && yandexAuth.user) {
-      localStorage.setItem('user', JSON.stringify(yandexAuth.user));
+      localStorage.setItem("user", JSON.stringify(yandexAuth.user));
       setUser(yandexAuth.user as User);
     }
   }, [yandexAuth.isAuthenticated, yandexAuth.user]);
 
   useEffect(() => {
     if (user) {
-      setEditForm({ name: user.name || '', city: user.city || '' });
+      setEditForm({ name: user.name || "", city: user.city || "" });
       loadPets();
     }
   }, [user]);
@@ -94,43 +97,44 @@ export default function Profile() {
       const data = await response.json();
       setPets(data);
     } catch (error) {
-      console.error('Failed to load pets:', error);
+      console.error("Failed to load pets:", error);
     } finally {
       setIsLoadingPets(false);
     }
   };
 
   const handleDeletePet = async (petId: number) => {
-    if (!confirm('Удалить объявление навсегда? Это действие нельзя отменить.')) return;
-    
+    if (!confirm("Удалить объявление навсегда? Это действие нельзя отменить."))
+      return;
+
     try {
       const response = await fetch(`${PETS_API_URL}?pet_id=${petId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      
+
       if (response.ok) {
-        setPets(pets.filter(p => p.id !== petId));
+        setPets(pets.filter((p) => p.id !== petId));
       }
     } catch (error) {
-      console.error('Failed to delete pet:', error);
-      alert('Не удалось удалить объявление');
+      console.error("Failed to delete pet:", error);
+      alert("Не удалось удалить объявление");
     }
   };
 
   const handleToggleActive = async (petId: number, isActive: boolean) => {
     try {
       const response = await fetch(`${PETS_API_URL}?pet_id=${petId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pet_id: petId, is_active: !isActive }),
       });
-      
+
       if (response.ok) {
         loadPets();
       }
     } catch (error) {
-      console.error('Failed to toggle pet status:', error);
-      alert('Не удалось изменить статус объявления');
+      console.error("Failed to toggle pet status:", error);
+      alert("Не удалось изменить статус объявления");
     }
   };
 
@@ -144,14 +148,14 @@ export default function Profile() {
     setEditingPet({
       id: 0,
       user_id: user.id,
-      name: '',
-      isNew: true
+      name: "",
+      isNew: true,
     });
     setShowPetForm(true);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
     yandexAuth.logout();
     setUser(null);
   };
@@ -166,33 +170,33 @@ export default function Profile() {
       reader.onload = async () => {
         const base64 = reader.result as string;
         const uploadResponse = await fetch(PROFILE_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'upload_avatar', image: base64 }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "upload_avatar", image: base64 }),
         });
         const uploadData = await uploadResponse.json();
-        
+
         if (uploadData.url && user) {
           const updateResponse = await fetch(PROFILE_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              action: 'update_profile',
+              action: "update_profile",
               user_id: user.id,
               avatar_url: uploadData.url,
             }),
           });
           const updateData = await updateResponse.json();
-          
+
           if (updateData.user) {
             setUser(updateData.user);
-            localStorage.setItem('user', JSON.stringify(updateData.user));
+            localStorage.setItem("user", JSON.stringify(updateData.user));
           }
         }
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error('Upload failed:', error);
+      console.error("Upload failed:", error);
     } finally {
       setIsUploading(false);
     }
@@ -204,10 +208,10 @@ export default function Profile() {
     setIsSaving(true);
     try {
       const response = await fetch(PROFILE_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'update_profile',
+          action: "update_profile",
           user_id: user.id,
           name: editForm.name,
           city: editForm.city,
@@ -216,11 +220,11 @@ export default function Profile() {
       const data = await response.json();
       if (data.user) {
         setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem("user", JSON.stringify(data.user));
         setIsEditing(false);
       }
     } catch (error) {
-      console.error('Save failed:', error);
+      console.error("Save failed:", error);
     } finally {
       setIsSaving(false);
     }
@@ -232,10 +236,10 @@ export default function Profile() {
     setIsUploading(true);
     try {
       const response = await fetch(PROFILE_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'update_profile',
+          action: "update_profile",
           user_id: user.id,
           avatar_url: null,
         }),
@@ -243,11 +247,11 @@ export default function Profile() {
       const data = await response.json();
       if (data.user) {
         setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem("user", JSON.stringify(data.user));
         setShowAvatarMenu(false);
       }
     } catch (error) {
-      console.error('Delete failed:', error);
+      console.error("Delete failed:", error);
     } finally {
       setIsUploading(false);
     }
@@ -261,7 +265,11 @@ export default function Profile() {
             <div className="text-center mb-8">
               <div className="relative inline-block mb-4">
                 {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full object-cover" />
+                  <img
+                    src={user.avatar_url}
+                    alt="Avatar"
+                    className="w-20 h-20 rounded-full object-cover"
+                  />
                 ) : (
                   <div className="inline-flex items-center justify-center w-20 h-20 bg-pink-100 rounded-full">
                     <Icon name="User" size={40} className="text-pink-600" />
@@ -271,7 +279,11 @@ export default function Profile() {
                   onClick={() => setShowAvatarMenu(!showAvatarMenu)}
                   className="absolute bottom-0 right-0 bg-pink-600 text-white p-2 rounded-full hover:bg-pink-700 transition-colors"
                 >
-                  <Icon name={isUploading ? "Loader2" : "Camera"} size={16} className={isUploading ? "animate-spin" : ""} />
+                  <Icon
+                    name={isUploading ? "Loader2" : "Camera"}
+                    size={16}
+                    className={isUploading ? "animate-spin" : ""}
+                  />
                 </button>
                 {showAvatarMenu && (
                   <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-10">
@@ -280,7 +292,12 @@ export default function Profile() {
                         <Icon name="Upload" size={16} />
                         Загрузить фото
                       </div>
-                      <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                      />
                     </label>
                     {user.avatar_url && (
                       <button
@@ -294,7 +311,9 @@ export default function Profile() {
                   </div>
                 )}
               </div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">Личный кабинет</h1>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                Личный кабинет
+              </h1>
               <p className="text-gray-600">{user.email}</p>
             </div>
 
@@ -302,31 +321,55 @@ export default function Profile() {
               {isEditing ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Имя</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Имя
+                    </label>
                     <input
                       type="text"
                       value={editForm.name}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                       placeholder="Ваше имя"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Город</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Город
+                    </label>
                     <input
                       type="text"
                       value={editForm.city}
-                      onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, city: e.target.value })
+                      }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                       placeholder="Ваш город"
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={handleSaveProfile} disabled={isSaving} className="flex-1">
-                      {isSaving ? <Icon name="Loader2" size={20} className="animate-spin" /> : <Icon name="Save" size={20} />}
+                    <Button
+                      onClick={handleSaveProfile}
+                      disabled={isSaving}
+                      className="flex-1"
+                    >
+                      {isSaving ? (
+                        <Icon
+                          name="Loader2"
+                          size={20}
+                          className="animate-spin"
+                        />
+                      ) : (
+                        <Icon name="Save" size={20} />
+                      )}
                       Сохранить
                     </Button>
-                    <Button variant="outline" onClick={() => setIsEditing(false)} className="flex-1">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                      className="flex-1"
+                    >
                       Отмена
                     </Button>
                   </div>
@@ -337,13 +380,21 @@ export default function Profile() {
                     <div className="space-y-3">
                       {user.name && (
                         <div className="flex items-center gap-2">
-                          <Icon name="User" size={18} className="text-gray-600" />
+                          <Icon
+                            name="User"
+                            size={18}
+                            className="text-gray-600"
+                          />
                           <span className="text-gray-800">{user.name}</span>
                         </div>
                       )}
                       {user.city && (
                         <div className="flex items-center gap-2">
-                          <Icon name="MapPin" size={18} className="text-gray-600" />
+                          <Icon
+                            name="MapPin"
+                            size={18}
+                            className="text-gray-600"
+                          />
                           <span className="text-gray-800">{user.city}</span>
                         </div>
                       )}
@@ -355,19 +406,32 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  <Button variant="outline" onClick={() => setIsEditing(true)} className="w-full">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditing(true)}
+                    className="w-full"
+                  >
                     <Icon name="Edit" size={20} />
                     Редактировать профиль
                   </Button>
 
                   <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-4 border border-pink-200">
                     <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                      <Icon name="Sparkles" size={18} className="text-pink-600" />
+                      <Icon
+                        name="Sparkles"
+                        size={18}
+                        className="text-pink-600"
+                      />
                       Дополнительные услуги
                     </h3>
                     <div className="space-y-2">
                       <Button
-                        onClick={() => window.open('https://yookassa.ru/integration/simplepay/payment/form/4ca14cac-c8ff-4ad2-aa7f-7d0b7fb51f5b', '_blank')}
+                        onClick={() =>
+                          window.open(
+                            "https://yookassa.ru/integration/simplepay/payment/form/4ca14cac-c8ff-4ad2-aa7f-7d0b7fb51f5b",
+                            "_blank",
+                          )
+                        }
                         variant="outline"
                         className="w-full text-yellow-700 border-yellow-300 hover:bg-yellow-50"
                       >
@@ -375,7 +439,12 @@ export default function Profile() {
                         Проверка документов — 500 ₽
                       </Button>
                       <Button
-                        onClick={() => window.open('https://yookassa.ru/integration/simplepay/payment/form/0fa4e9ac-2dac-47ff-9cfd-e69974fa02fa', '_blank')}
+                        onClick={() =>
+                          window.open(
+                            "https://yookassa.ru/integration/simplepay/payment/form/0fa4e9ac-2dac-47ff-9cfd-e69974fa02fa",
+                            "_blank",
+                          )
+                        }
                         variant="outline"
                         className="w-full text-blue-700 border-blue-300 hover:bg-blue-50"
                       >
@@ -385,7 +454,11 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  <Button variant="outline" onClick={handleLogout} className="w-full">
+                  <Button
+                    variant="outline"
+                    onClick={handleLogout}
+                    className="w-full"
+                  >
                     <Icon name="LogOut" size={20} />
                     Выйти
                   </Button>
@@ -405,45 +478,71 @@ export default function Profile() {
 
             {isLoadingPets ? (
               <div className="text-center py-8">
-                <Icon name="Loader2" size={32} className="animate-spin text-pink-600 mx-auto" />
+                <Icon
+                  name="Loader2"
+                  size={32}
+                  className="animate-spin text-pink-600 mx-auto"
+                />
               </div>
             ) : pets.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <Icon name="Dog" size={48} className="mx-auto mb-4 text-gray-300" />
+                <Icon
+                  name="Dog"
+                  size={48}
+                  className="mx-auto mb-4 text-gray-300"
+                />
                 <p>У вас пока нет объявлений о питомцах</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {pets.map((pet) => (
-                  <div 
-                    key={pet.id} 
+                  <div
+                    key={pet.id}
                     className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
-                      pet.is_active === false ? 'bg-gray-50 border-gray-300 opacity-60' : 'border-gray-200'
+                      pet.is_active === false
+                        ? "bg-gray-50 border-gray-300 opacity-60"
+                        : "border-gray-200"
                     }`}
                   >
                     <div className="flex gap-4">
                       {pet.photo_url ? (
-                        <img src={pet.photo_url} alt={pet.name} className="w-20 h-20 rounded-lg object-cover" />
+                        <img
+                          src={pet.photo_url}
+                          alt={pet.name}
+                          className="w-20 h-20 rounded-lg object-cover"
+                        />
                       ) : (
                         <div className="w-20 h-20 bg-pink-100 rounded-lg flex items-center justify-center">
-                          <Icon name="Dog" size={32} className="text-pink-600" />
+                          <Icon
+                            name="Dog"
+                            size={32}
+                            className="text-pink-600"
+                          />
                         </div>
                       )}
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-lg text-gray-800">{pet.name}</h3>
+                          <h3 className="font-bold text-lg text-gray-800">
+                            {pet.name}
+                          </h3>
                           {pet.is_active === false && (
-                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Скрыто</span>
+                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                              Скрыто
+                            </span>
                           )}
                         </div>
-                        {pet.breed && <p className="text-sm text-gray-600">{pet.breed}</p>}
+                        {pet.breed && (
+                          <p className="text-sm text-gray-600">{pet.breed}</p>
+                        )}
                         <div className="flex gap-2 mt-2 flex-wrap">
                           {pet.age && (
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{pet.age} лет</span>
+                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                              {pet.age} лет
+                            </span>
                           )}
                           {pet.gender && (
                             <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                              {pet.gender === 'male' ? 'Кобель' : 'Сука'}
+                              {pet.gender === "male" ? "Кобель" : "Сука"}
                             </span>
                           )}
                           {pet.verification_paid && (
@@ -454,7 +553,7 @@ export default function Profile() {
                           )}
                           {pet.breeding_price && (
                             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                              {pet.breeding_price.toLocaleString('ru-RU')} ₽
+                              {pet.breeding_price.toLocaleString("ru-RU")} ₽
                             </span>
                           )}
                         </div>
@@ -471,22 +570,40 @@ export default function Profile() {
                                 Редактировать
                               </Button>
                               <Button
-                                onClick={() => handleToggleActive(pet.id, pet.is_active !== false)}
+                                onClick={() =>
+                                  handleToggleActive(
+                                    pet.id,
+                                    pet.is_active !== false,
+                                  )
+                                }
                                 size="sm"
                                 variant="outline"
                                 className="text-orange-600 hover:text-orange-700 border-orange-200 hover:border-orange-300"
                               >
-                                <Icon name="EyeOff" size={14} className="mr-1" />
+                                <Icon
+                                  name="EyeOff"
+                                  size={14}
+                                  className="mr-1"
+                                />
                                 Скрыть
                               </Button>
                               {!pet.verification_paid && (
                                 <Button
-                                  onClick={() => window.open('https://yookassa.ru/integration/simplepay/payment/form/4ca14cac-c8ff-4ad2-aa7f-7d0b7fb51f5b', '_blank')}
+                                  onClick={() =>
+                                    window.open(
+                                      "https://yookassa.ru/integration/simplepay/payment/form/4ca14cac-c8ff-4ad2-aa7f-7d0b7fb51f5b",
+                                      "_blank",
+                                    )
+                                  }
                                   size="sm"
                                   variant="outline"
                                   className="text-yellow-600 hover:text-yellow-700 border-yellow-200 hover:border-yellow-300"
                                 >
-                                  <Icon name="ShieldCheck" size={14} className="mr-1" />
+                                  <Icon
+                                    name="ShieldCheck"
+                                    size={14}
+                                    className="mr-1"
+                                  />
                                   Проверка 500₽
                                 </Button>
                               )}
@@ -494,7 +611,12 @@ export default function Profile() {
                           ) : (
                             <>
                               <Button
-                                onClick={() => handleToggleActive(pet.id, pet.is_active !== false)}
+                                onClick={() =>
+                                  handleToggleActive(
+                                    pet.id,
+                                    pet.is_active !== false,
+                                  )
+                                }
                                 size="sm"
                                 variant="outline"
                                 className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
@@ -508,7 +630,11 @@ export default function Profile() {
                                 variant="outline"
                                 className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
                               >
-                                <Icon name="Trash2" size={14} className="mr-1" />
+                                <Icon
+                                  name="Trash2"
+                                  size={14}
+                                  className="mr-1"
+                                />
                                 Удалить
                               </Button>
                             </>
@@ -525,7 +651,7 @@ export default function Profile() {
           <div className="mt-6 text-center">
             <Button
               variant="ghost"
-              onClick={() => window.location.href = '/'}
+              onClick={() => (window.location.href = "/")}
               className="gap-2"
             >
               <Icon name="ArrowLeft" size={20} />
@@ -559,7 +685,7 @@ export default function Profile() {
         <div className="absolute top-6 left-6">
           <Button
             variant="ghost"
-            onClick={() => window.location.href = '/'}
+            onClick={() => (window.location.href = "/")}
             className="gap-2"
           >
             <Icon name="ArrowLeft" size={20} />
@@ -572,7 +698,9 @@ export default function Profile() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-pink-100 rounded-full mb-4">
               <Icon name="Heart" size={32} className="text-pink-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Вход в TinDog</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Вход в TinDog
+            </h2>
             <p className="text-gray-600">Выберите способ входа</p>
           </div>
 
@@ -580,7 +708,7 @@ export default function Profile() {
             <TelegramLoginButton
               onClick={() => {
                 const botUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=web_auth`;
-                window.open(botUrl, '_blank');
+                window.open(botUrl, "_blank");
               }}
             />
             <YandexLoginButton

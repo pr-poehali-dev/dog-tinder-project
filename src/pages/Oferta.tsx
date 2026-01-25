@@ -49,9 +49,8 @@ export default function Oferta() {
                 за 7 календарных дней.
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                <li>Ветеринарное сопровождение — 7 500 ₽</li>
-                <li>Юридическое сопровождение — 3 500 ₽</li>
-                <li>Доставка питомца — от 2 000 ₽</li>
+                <li>Проверка документов — 500 ₽</li>
+                <li>Сопровождение ветеринара — 7 500 ₽</li>
               </ul>
             </section>
 

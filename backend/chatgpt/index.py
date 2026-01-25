@@ -77,12 +77,18 @@ def make_request(endpoint: str, method: str = "POST", data: Optional[dict] = Non
         raise ValueError(error_body.get("error", {}).get("message", str(e)))
 
 
-def get_arina_answer(user_message: str) -> str:
-    """Встроенная база знаний Арины"""
+def get_arina_answer(user_message: str, conversation_history: list = None) -> str:
+    """Встроенная база знаний Арины с поддержкой контекста"""
     msg_lower = user_message.lower()
     
-    if any(word in msg_lower for word in ['привет', 'здравствуй', 'добрый']):
-        return "Привет! 👋 Я Арина, ассистент поддержки TinDog. Чем могу помочь?"
+    if any(word in msg_lower for word in ['привет', 'здравствуй', 'добрый', 'здравствуйте']):
+        return "Привет! 👋 Я Арина, ассистент поддержки TinDog. Помогу с вопросами о вязке собак, подготовке и работе платформы. Чем могу помочь?"
+    
+    if any(word in msg_lower for word in ['спасибо', 'благодарю', 'пасиб']):
+        return "Всегда рада помочь! 😊 Если будут ещё вопросы — обращайтесь!"
+    
+    if any(word in msg_lower for word in ['пока', 'до свидания', 'досвидос']):
+        return "До встречи! Удачи вам и вашему питомцу! 🐕💕"
     
     if 'когда' in msg_lower and ('вязать' in msg_lower or 'вязка' in msg_lower) and 'первый' in msg_lower:
         return """Отличный вопрос! 🐕
@@ -94,7 +100,7 @@ def get_arina_answer(user_message: str) -> str:
 
 Важно учитывать породу и готовность собаки. Лучше проконсультироваться с ветеринаром перед первой вязкой 👨‍⚕️"""
     
-    if 'анализ' in msg_lower or 'обследован' in msg_lower:
+    if any(word in msg_lower for word in ['анализ', 'обследован', 'тест', 'проверк']):
         return """Перед вязкой обязательно нужны 🔬:
 
 ✅ Общий анализ крови
@@ -104,7 +110,7 @@ def get_arina_answer(user_message: str) -> str:
 
 Также проверьте прививки и обработку от паразитов. На платформе можно заказать сопровождение ветеринара за 7500₽ 💉"""
     
-    if 'как' in msg_lower and ('вязка' in msg_lower or 'процесс' in msg_lower):
+    if 'как' in msg_lower and ('вязка' in msg_lower or 'процесс' in msg_lower or 'происходит' in msg_lower):
         return """Процесс вязки обычно проходит так 🐾:
 
 1️⃣ Знакомство собак на нейтральной территории
@@ -115,7 +121,7 @@ def get_arina_answer(user_message: str) -> str:
 
 Важно: не разъединяйте собак силой во время замка! Это естественный процесс 💕"""
     
-    if 'алимент' in msg_lower or 'щенк' in msg_lower and 'оплат' in msg_lower:
+    if 'алимент' in msg_lower or ('щенк' in msg_lower and 'оплат' in msg_lower):
         return """Алиментные щенки — это форма оплаты вязки 🐶
 
 Владелец кобеля получает:
@@ -124,7 +130,7 @@ def get_arina_answer(user_message: str) -> str:
 
 Вместо денежной оплаты. Всё обсуждается заранее и прописывается в договоре!"""
     
-    if 'родословн' in msg_lower or 'ркф' in msg_lower:
+    if 'родословн' in msg_lower or 'ркф' in msg_lower or 'документ' in msg_lower:
         return """О документах РКФ 📋:
 
 • Родословная РКФ нужна, если хотите продавать щенков с документами
@@ -133,7 +139,7 @@ def get_arina_answer(user_message: str) -> str:
 
 Важно: обе собаки должны иметь родословную для регистрации помёта в РКФ ✅"""
     
-    if 'партнёр' in msg_lower or 'выбра' in msg_lower:
+    if any(word in msg_lower for word in ['партнёр', 'выбра', 'кандидат', 'подходящ']):
         return """При выборе партнёра обращайте внимание на 🔍:
 
 ✅ Порода и стандарт (должны совпадать)
@@ -144,7 +150,7 @@ def get_arina_answer(user_message: str) -> str:
 
 На TinDog можно фильтровать кандидатов по всем параметрам!"""
     
-    if 'платформ' in msg_lower or 'работа' in msg_lower or 'tindog' in msg_lower:
+    if any(word in msg_lower for word in ['платформ', 'работа', 'tindog', 'тиндог', 'сайт', 'приложен']):
         return """TinDog — платформа для поиска партнёров для вязки 💕
 
 Как это работает:
@@ -156,7 +162,7 @@ def get_arina_answer(user_message: str) -> str:
 
 У нас есть проверка документов (500₽) и сопровождение ветеринара (7500₽)!"""
     
-    if 'беремен' in msg_lower or 'щен' in msg_lower or 'род' in msg_lower:
+    if any(word in msg_lower for word in ['беремен', 'род', 'щен']):
         return """О беременности и родах 🤰:
 
 • Беременность длится 58-63 дня
@@ -167,7 +173,7 @@ def get_arina_answer(user_message: str) -> str:
 
 Первые роды могут быть сложными — рекомендую сопровождение специалиста!"""
     
-    if 'цена' in msg_lower or 'стоимость' in msg_lower or 'сколько' in msg_lower:
+    if any(word in msg_lower for word in ['цена', 'стоимость', 'сколько', 'стоит']):
         return """Наши услуги 💰:
 
 ✅ Проверка документов — 500₽
@@ -178,7 +184,7 @@ def get_arina_answer(user_message: str) -> str:
 
 Использование платформы — бесплатно! Оплата только за дополнительные услуги."""
     
-    if 'договор' in msg_lower or 'юридич' in msg_lower:
+    if any(word in msg_lower for word in ['договор', 'юридич', 'закон', 'право']):
         return """О договорах и юридической стороне 📝:
 
 • Рекомендую заключать письменный договор о вязке
@@ -188,7 +194,7 @@ def get_arina_answer(user_message: str) -> str:
 
 Договор защищает обе стороны от недопонимания!"""
     
-    if 'помощь' in msg_lower or 'вопрос' in msg_lower:
+    if any(word in msg_lower for word in ['помощь', 'помоги', 'вопрос']):
         return """Я помогу с любыми вопросами о 🐕:
 
 • Платформе TinDog
@@ -201,14 +207,31 @@ def get_arina_answer(user_message: str) -> str:
 
 Просто спрашивайте — отвечу!"""
     
-    return """Понимаю вас! Если у вас есть конкретный вопрос о:
-• Вязке собак и подготовке к ней
-• Работе платформы TinDog
-• Документах и родословных
-• Здоровье питомца
-• Беременности и родах
+    short_responses = {
+        'да': 'Хорошо! Чем ещё могу помочь? 😊',
+        'нет': 'Понятно. Если будут вопросы — обращайтесь!',
+        'ок': 'Отлично! Если что-то ещё понадобится — пишите!',
+        'понятно': 'Рада, что помогла! Есть ещё вопросы?',
+        'ясно': 'Супер! Обращайтесь, если что! 👍',
+        'хорошо': 'Здорово! Чем ещё помочь?'
+    }
+    
+    for word, response in short_responses.items():
+        if msg_lower.strip() == word:
+            return response
+    
+    if len(user_message.split()) <= 3 and not any(c in user_message for c in '?!'):
+        return f"Расскажите подробнее, пожалуйста! Что именно вас интересует по теме '{user_message}'? 😊"
+    
+    return """Понимаю вас! У меня есть информация по темам:
+• Вязка собак и подготовка к ней
+• Работа платформы TinDog
+• Документы и родословные РКФ
+• Здоровье питомца и анализы
+• Беременность и роды
+• Договоры между владельцами
 
-Задавайте, постараюсь помочь! Или напишите подробнее, что вас интересует 😊"""
+Попробуйте переформулировать вопрос или задайте конкретный вопрос из этих тем. Я постараюсь помочь! 💕"""
 
 
 def handle_generate(body: dict) -> dict:

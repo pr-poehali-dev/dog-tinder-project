@@ -5,6 +5,7 @@ import { useYandexAuth } from "@/components/extensions/yandex-auth/useYandexAuth
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import PetForm from "@/components/PetForm";
+import EditUsernameDialog from "@/components/EditUsernameDialog";
 
 const YANDEX_AUTH_URL =
   "https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6";
@@ -17,6 +18,7 @@ const PETS_API_URL =
 interface User {
   id: number;
   email: string;
+  username?: string;
   name?: string;
   phone?: string;
   city?: string;
@@ -58,6 +60,7 @@ export default function Profile() {
   const [showPetForm, setShowPetForm] = useState(false);
   const [isLoadingPets, setIsLoadingPets] = useState(false);
   const [editingPet, setEditingPet] = useState<EditingPet | null>(null);
+  const [showUsernameDialog, setShowUsernameDialog] = useState(false);
 
   const yandexAuth = useYandexAuth({
     apiUrls: {
@@ -314,6 +317,17 @@ export default function Profile() {
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
                 Личный кабинет
               </h1>
+              {user.username && (
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-gray-600">@{user.username}</span>
+                  <button
+                    onClick={() => setShowUsernameDialog(true)}
+                    className="text-pink-600 hover:text-pink-700"
+                  >
+                    <Icon name="Edit" size={14} />
+                  </button>
+                </div>
+              )}
               <p className="text-gray-600">{user.email}</p>
             </div>
 
@@ -672,6 +686,20 @@ export default function Profile() {
             onCancel={() => {
               setShowPetForm(false);
               setEditingPet(null);
+            }}
+          />
+        )}
+        
+        {user.username && (
+          <EditUsernameDialog
+            open={showUsernameDialog}
+            onOpenChange={setShowUsernameDialog}
+            currentUsername={user.username}
+            userId={user.id}
+            onSuccess={(newUsername) => {
+              const updatedUser = { ...user, username: newUsername };
+              setUser(updatedUser);
+              localStorage.setItem('user', JSON.stringify(updatedUser));
             }}
           />
         )}

@@ -207,15 +207,12 @@ def create_or_update_user(
             RETURNING id, email, name, avatar_url, telegram_id, username, phone
         """, (display_name, photo_url, phone, telegram_id))
     else:
-        # Generate unique username
-        generated_username = generate_unique_username(cursor, username, telegram_id)
-        
-        # Create new user
+        # Create new user WITHOUT username (user will set it manually)
         cursor.execute(f"""
             INSERT INTO {schema}users (telegram_id, username, name, phone, avatar_url, email, email_verified, password_hash, created_at, updated_at, last_login_at)
-            VALUES (%s, %s, %s, %s, %s, '', TRUE, '', NOW(), NOW(), NOW())
+            VALUES (%s, NULL, %s, %s, %s, '', TRUE, '', NOW(), NOW(), NOW())
             RETURNING id, email, name, avatar_url, telegram_id, username, phone
-        """, (telegram_id, generated_username, display_name, phone, photo_url))
+        """, (telegram_id, display_name, phone, photo_url))
 
     row = cursor.fetchone()
     return {
@@ -371,6 +368,14 @@ def handle_callback(cursor, body: dict) -> dict:
     # Mark token as used
     mark_token_used(cursor, token)
 
+    # If new user without username - ask to set it
+    if not user['username']:
+        return cors_response(200, {
+            'needs_username': True,
+            'user_id': user['id'],
+            'user': user
+        })
+
     # Generate tokens
     access_token = create_jwt(user["id"], jwt_secret)
     refresh_token = generate_token(48)
@@ -414,6 +419,69 @@ def handle_refresh(cursor, body: dict) -> dict:
         "access_token": access_token,
         "expires_in": 900,
         "user": user,
+    })
+
+
+def handle_set_username(cursor, body: dict) -> dict:
+    """
+    POST ?action=set_username
+    Set or update username for user.
+    """
+    user_id = body.get('user_id')
+    new_username = body.get('username', '').strip().lower()
+    
+    if not user_id or not new_username:
+        return cors_response(400, {'error': 'Missing user_id or username'})
+    
+    # Validate username format
+    if not new_username.replace('_', '').isalnum():
+        return cors_response(400, {'error': 'Username can only contain letters, numbers, and underscores'})
+    
+    if len(new_username) < 3 or len(new_username) > 30:
+        return cors_response(400, {'error': 'Username must be between 3 and 30 characters'})
+    
+    schema = get_schema()
+    
+    # Check if username is already taken by another user
+    cursor.execute(f"SELECT id FROM {schema}users WHERE username = %s AND id != %s", (new_username, user_id))
+    if cursor.fetchone():
+        return cors_response(400, {'error': 'Username already taken'})
+    
+    # Update user with new username (allow changing existing username)
+    cursor.execute(f"""
+        UPDATE {schema}users
+        SET username = %s, updated_at = NOW()
+        WHERE id = %s
+        RETURNING id, email, name, avatar_url, telegram_id, username, phone
+    """, (new_username, user_id))
+    
+    row = cursor.fetchone()
+    if not row:
+        return cors_response(400, {'error': 'User not found'})
+    
+    user = {
+        "id": row[0],
+        "email": row[1],
+        "name": row[2],
+        "avatar_url": row[3],
+        "telegram_id": row[4],
+        "username": row[5],
+        "phone": row[6],
+    }
+    
+    # Generate tokens
+    jwt_secret = get_env('JWT_SECRET')
+    access_token = create_jwt(user['id'], jwt_secret, expires_in=900)
+    refresh_token = generate_token(48)
+    refresh_token_hash = hash_token(refresh_token)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    
+    save_refresh_token(cursor, user['id'], refresh_token_hash, expires_at)
+    
+    return cors_response(200, {
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'user': user
     })
 
 
@@ -467,6 +535,8 @@ def handler(event, context):
         # Route to action handler
         if action == "callback" and method == "POST":
             response = handle_callback(cursor, body)
+        elif action == "set_username" and method == "POST":
+            response = handle_set_username(cursor, body)
         elif action == "refresh" and method == "POST":
             response = handle_refresh(cursor, body)
         elif action == "logout" and method == "POST":

@@ -118,17 +118,37 @@ def save_auth_token(
 # WEBHOOK HANDLERS (Authorization)
 # =============================================================================
 
-def handle_web_auth(chat_id: int, user: dict) -> None:
+def request_phone_number(chat_id: int, user: dict) -> None:
+    """Запрос номера телефона для авторизации."""
+    bot = get_bot()
+    
+    keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    button_phone = telebot.types.KeyboardButton(text="📱 Поделиться номером", request_contact=True)
+    keyboard.add(button_phone)
+    
+    bot.send_message(
+        chat_id,
+        "Для входа на сайт, пожалуйста, поделитесь своим номером телефона 👇",
+        reply_markup=keyboard
+    )
+
+
+def handle_web_auth(chat_id: int, user: dict, phone: str = None) -> None:
     """Обработка команды /start web_auth."""
     telegram_id = str(user.get("id", ""))
     username = user.get("username")
     first_name = user.get("first_name")
     last_name = user.get("last_name")
 
+    # Если телефона нет, запрашиваем
+    if not phone:
+        request_phone_number(chat_id, user)
+        return
+
     token = save_auth_token(telegram_id, username, first_name, last_name)
 
     site_url = os.environ["SITE_URL"].rstrip("/")
-    auth_url = f"{site_url}/auth/telegram/callback?token={token}"
+    auth_url = f"{site_url}/auth/telegram/callback?token={token}&phone={phone}"
 
     bot = get_bot()
     bot.send_message(
@@ -156,12 +176,18 @@ def process_webhook(body: dict) -> dict:
     text = message.get("text", "")
     user = message.get("from", {})
     chat_id = message.get("chat", {}).get("id")
+    contact = message.get("contact")
 
     if not chat_id:
         return {"statusCode": 200, "body": json.dumps({"ok": True})}
 
     try:
-        if text.startswith("/start"):
+        # Обработка контакта (номера телефона)
+        if contact and contact.get("phone_number"):
+            phone = contact.get("phone_number")
+            handle_web_auth(chat_id, user, phone=phone)
+        # Обработка команд
+        elif text.startswith("/start"):
             parts = text.split(" ", 1)
             if len(parts) > 1 and parts[1] == "web_auth":
                 handle_web_auth(chat_id, user)

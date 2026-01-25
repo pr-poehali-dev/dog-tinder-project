@@ -137,13 +137,48 @@ def find_user_by_telegram_id(cursor, telegram_id: str) -> Optional[dict]:
     return None
 
 
+def generate_unique_username(cursor, base_username: str, telegram_id: str) -> str:
+    """Generate unique username based on telegram username or id."""
+    schema = get_schema()
+    
+    # Clean base username
+    if base_username:
+        username = base_username.lower().replace('@', '')
+        username = ''.join(c for c in username if c.isalnum() or c == '_')
+    else:
+        username = f"tg{telegram_id}"
+    
+    # Check if username is available
+    original_username = username
+    counter = 1
+    
+    while True:
+        cursor.execute(f"""
+            SELECT id FROM {schema}users WHERE username = %s
+        """, (username,))
+        
+        if cursor.fetchone() is None:
+            return username
+        
+        # Username taken, try with number
+        username = f"{original_username}{counter}"
+        counter += 1
+        
+        if counter > 100:  # Safety limit
+            username = f"tg{telegram_id}_{secrets.token_hex(4)}"
+            break
+    
+    return username
+
+
 def create_or_update_user(
     cursor,
     telegram_id: str,
     username: Optional[str],
     first_name: Optional[str],
     last_name: Optional[str],
-    photo_url: Optional[str]
+    photo_url: Optional[str],
+    phone: Optional[str] = None
 ) -> dict:
     """Create new user or update existing one."""
     schema = get_schema()
@@ -165,18 +200,22 @@ def create_or_update_user(
             UPDATE {schema}users
             SET name = COALESCE(%s, name),
                 avatar_url = COALESCE(%s, avatar_url),
+                phone = COALESCE(%s, phone),
                 last_login_at = NOW(),
                 updated_at = NOW()
             WHERE telegram_id = %s
-            RETURNING id, email, name, avatar_url, telegram_id
-        """, (display_name, photo_url, telegram_id))
+            RETURNING id, email, name, avatar_url, telegram_id, username, phone
+        """, (display_name, photo_url, phone, telegram_id))
     else:
+        # Generate unique username
+        generated_username = generate_unique_username(cursor, username, telegram_id)
+        
         # Create new user
         cursor.execute(f"""
-            INSERT INTO {schema}users (telegram_id, name, avatar_url, email_verified, password_hash, created_at, updated_at, last_login_at)
-            VALUES (%s, %s, %s, TRUE, '', NOW(), NOW(), NOW())
-            RETURNING id, email, name, avatar_url, telegram_id
-        """, (telegram_id, display_name, photo_url))
+            INSERT INTO {schema}users (telegram_id, username, name, phone, avatar_url, email, email_verified, password_hash, created_at, updated_at, last_login_at)
+            VALUES (%s, %s, %s, %s, %s, '', TRUE, '', NOW(), NOW(), NOW())
+            RETURNING id, email, name, avatar_url, telegram_id, username, phone
+        """, (telegram_id, generated_username, display_name, phone, photo_url))
 
     row = cursor.fetchone()
     return {
@@ -185,6 +224,8 @@ def create_or_update_user(
         "name": row[2],
         "avatar_url": row[3],
         "telegram_id": row[4],
+        "username": row[5],
+        "phone": row[6],
     }
 
 
@@ -284,6 +325,8 @@ def handle_callback(cursor, body: dict) -> dict:
     Like standard OAuth callback.
     """
     token = body.get("token")
+    phone = body.get("phone")  # Получаем телефон из запроса
+    
     if not token:
         return cors_response(400, {"error": "Missing token"})
 
@@ -322,6 +365,7 @@ def handle_callback(cursor, body: dict) -> dict:
         first_name=token_data["telegram_first_name"],
         last_name=token_data["telegram_last_name"],
         photo_url=token_data["telegram_photo_url"],
+        phone=phone  # Передаём телефон
     )
 
     # Mark token as used

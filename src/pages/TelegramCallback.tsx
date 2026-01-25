@@ -10,6 +10,7 @@ export default function TelegramCallback() {
 
   useEffect(() => {
     const token = searchParams.get('token');
+    const phone = searchParams.get('phone');
     
     if (!token) {
       setError('Отсутствует токен авторизации');
@@ -20,7 +21,7 @@ export default function TelegramCallback() {
     fetch(`${AUTH_API_URL}?action=callback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
+      body: JSON.stringify({ token, phone })
     })
       .then(res => res.json())
       .then(data => {

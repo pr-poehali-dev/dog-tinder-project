@@ -51,6 +51,35 @@ def cleanup_expired_tokens(cur, schema: str) -> None:
     cur.execute(f"DELETE FROM {schema}refresh_tokens WHERE expires_at < %s", (now,))
 
 
+def generate_unique_username(cur, schema: str, base_email: str, yandex_id: str) -> str:
+    """Generate unique username from email."""
+    # Extract username part from email (before @)
+    if '@' in base_email:
+        base_username = base_email.split('@')[0]
+    else:
+        base_username = f"yandex{yandex_id}"
+    
+    # Clean username - only alphanumeric and underscores
+    base_username = ''.join(c for c in base_username.lower() if c.isalnum() or c == '_')
+    if not base_username:
+        base_username = f"yandex{yandex_id}"
+    
+    # Try to find available username
+    username = base_username
+    counter = 1
+    
+    while counter < 100:
+        cur.execute(f"SELECT id FROM {schema}users WHERE username = %s", (username,))
+        if cur.fetchone() is None:
+            return username
+        
+        username = f"{base_username}{counter}"
+        counter += 1
+    
+    # Fallback: use yandex_id + random suffix
+    return f"yandex{yandex_id}_{secrets.token_hex(4)}"
+
+
 # =============================================================================
 # SECURITY
 # =============================================================================
@@ -323,12 +352,13 @@ def handle_callback(event: dict, origin: str) -> dict:
                     picture = db_avatar or picture
                 else:
                     # 3. Create new user
+                    username = generate_unique_username(cur, S, email, yandex_id)
                     cur.execute(
                         f"""INSERT INTO {S}users
-                            (yandex_id, email, name, avatar_url, email_verified, created_at, updated_at, last_login_at)
-                            VALUES (%s, %s, %s, %s, TRUE, %s, %s, %s)
+                            (yandex_id, username, email, name, avatar_url, email_verified, password_hash, created_at, updated_at, last_login_at)
+                            VALUES (%s, %s, %s, %s, %s, TRUE, '', %s, %s, %s)
                             RETURNING id""",
-                        (yandex_id, email, name, picture, now, now, now)
+                        (yandex_id, username, email, name, picture, now, now, now)
                     )
                     user_id = cur.fetchone()[0]
 

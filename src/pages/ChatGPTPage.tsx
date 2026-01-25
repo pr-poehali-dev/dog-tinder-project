@@ -55,7 +55,29 @@ export default function ChatGPTPage() {
   const { generate, isLoading } = useChatGPT({ apiUrl: API_URL });
 
   useEffect(() => {
+    const savedMessages = localStorage.getItem('chatHistory');
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages);
+        const messagesWithDates = parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+        setMessages(messagesWithDates);
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('chatHistory', JSON.stringify(messages));
+    }
   }, [messages]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -108,6 +130,13 @@ export default function ChatGPTPage() {
     setInput(question);
   };
 
+  const clearHistory = () => {
+    if (confirm('Очистить всю историю переписки?')) {
+      setMessages([]);
+      localStorage.removeItem('chatHistory');
+    }
+  };
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
@@ -132,19 +161,26 @@ export default function ChatGPTPage() {
                 <p className="text-sm text-gray-500">Поддержка TinDog • онлайн</p>
               </div>
             </div>
-            <div className="hidden lg:flex items-center gap-2">
-              <Button variant="ghost" onClick={() => (window.location.href = '/')}>
-                <Icon name="Home" size={24} />
-              </Button>
-              <Button variant="ghost" onClick={() => (window.location.href = '/likes')}>
-                <Icon name="Heart" size={24} />
-              </Button>
-              <Button variant="ghost" onClick={() => (window.location.href = '/chats')}>
-                <Icon name="MessageCircle" size={24} />
-              </Button>
-              <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>
-                <Icon name="User" size={24} />
-              </Button>
+            <div className="flex items-center gap-2">
+              {messages.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearHistory} className="text-gray-500 hover:text-red-600">
+                  <Icon name="Trash2" size={20} />
+                </Button>
+              )}
+              <div className="hidden lg:flex items-center gap-2">
+                <Button variant="ghost" onClick={() => (window.location.href = '/')}>
+                  <Icon name="Home" size={24} />
+                </Button>
+                <Button variant="ghost" onClick={() => (window.location.href = '/likes')}>
+                  <Icon name="Heart" size={24} />
+                </Button>
+                <Button variant="ghost" onClick={() => (window.location.href = '/chats')}>
+                  <Icon name="MessageCircle" size={24} />
+                </Button>
+                <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>
+                  <Icon name="User" size={24} />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

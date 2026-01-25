@@ -41,6 +41,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [wantsVerification, setWantsVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string>('');
 
   const calculateRecommendedPrice = (): number | null => {
     const breedPrices: { [key: string]: number } = {
@@ -126,6 +127,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
 
     try {
       let photoUrl = '';
@@ -142,6 +144,11 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'upload_photo', image: base64Photo }),
         });
+        
+        if (!photoResponse.ok) {
+          throw new Error('Не удалось загрузить фото');
+        }
+        
         const photoData = await photoResponse.json();
         photoUrl = photoData.url;
       }
@@ -166,7 +173,16 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
           }),
         }
       );
+      
+      if (!petResponse.ok) {
+        throw new Error('Не удалось сохранить данные питомца');
+      }
+      
       const petData = await petResponse.json();
+
+      if (!petData.pet) {
+        throw new Error('Ошибка при сохранении питомца');
+      }
 
       if (documentFile && petData.pet) {
         const reader = new FileReader();
@@ -201,6 +217,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
       onSuccess();
     } catch (error) {
       console.error('Failed to create pet:', error);
+      setError(error instanceof Error ? error.message : 'Произошла ошибка при публикации');
     } finally {
       setIsSubmitting(false);
     }
@@ -588,6 +605,13 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
                 </div>
               </label>
             </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-2">
+                <Icon name="AlertCircle" size={20} className="flex-shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" disabled={isSubmitting} className="flex-1">

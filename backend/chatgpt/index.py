@@ -236,6 +236,8 @@ def get_arina_answer(user_message: str, conversation_history: list = None) -> st
 
 def handle_generate(body: dict) -> dict:
     messages = body.get("messages", [])
+    print(f"[DEBUG] Received messages: {messages}")
+    
     if not messages:
         return cors_response(400, {"error": "messages is required"})
 
@@ -244,7 +246,10 @@ def handle_generate(body: dict) -> dict:
         return cors_response(400, {"error": "No user message found"})
     
     last_user_message = user_messages[-1].get("content", "")
+    print(f"[DEBUG] Last user message: {last_user_message}")
+    
     answer = get_arina_answer(last_user_message)
+    print(f"[DEBUG] Answer: {answer}")
     
     return cors_response(200, {
         "success": True,

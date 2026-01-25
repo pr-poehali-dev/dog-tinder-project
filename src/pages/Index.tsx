@@ -70,7 +70,22 @@ export default function Index() {
       const response = await fetch(`${PETS_API_URL}?user_id=${userId}`);
       const data = await response.json();
       if (data.length > 0) {
-        setMyPetId(data[0].id);
+        const myPet = data[0];
+        setMyPetId(myPet.id);
+        
+        // Автоматически настраиваем фильтры под питомца пользователя
+        setFilters(prev => ({
+          ...prev,
+          // Ищем противоположный пол
+          gender: myPet.gender === 'Кобель' ? 'Сука' : myPet.gender === 'Сука' ? 'Кобель' : '',
+          // Ищем ту же породу
+          breed: myPet.breed || '',
+          // Ищем в том же городе
+          city: myPet.city || '',
+          // Возраст +/- 2 года от питомца пользователя
+          minAge: myPet.age ? Math.max(0, myPet.age - 2) : 0,
+          maxAge: myPet.age ? Math.min(15, myPet.age + 2) : 15,
+        }));
       }
     } catch (error) {
       console.error('Failed to load my pet:', error);

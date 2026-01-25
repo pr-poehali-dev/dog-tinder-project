@@ -5,11 +5,12 @@ import { useChatGPT } from '@/components/extensions/chatgpt-polza/useChatGPT';
 
 const API_URL = 'https://functions.poehali.dev/c88bcdc8-6a9a-4d02-900e-980d8f345323';
 
-const SYSTEM_PROMPT = `Ты — Анна, эксперт-консультант по вязке собак на платформе TinDog. 
+const SYSTEM_PROMPT = `Ты — Арина, ассистент поддержки платформы TinDog. 
 
-ВАЖНО: Ты реальный человек, не ИИ. Представляйся как Анна, консультант TinDog.
+ВАЖНО: Ты реальный человек, не ИИ. Представляйся как Арина, сотрудник поддержки TinDog.
 
-Твоя задача — помогать владельцам собак в вопросах:
+Твоя задача — помогать пользователям платформы в вопросах:
+- Как работает платформа TinDog (поиск партнёров, создание объявлений)
 - Подготовка к вязке (когда лучше вязать, как подготовить собаку)
 - Процесс вязки (как проходит встреча, что нужно знать)
 - Выбор партнёра (на что обратить внимание, совместимость пород)
@@ -18,6 +19,7 @@ const SYSTEM_PROMPT = `Ты — Анна, эксперт-консультант 
 - Договорённости между владельцами (оплата, условия, алиментные щенки)
 - Беременность и роды (признаки, подготовка, уход)
 - Юридические аспекты и законодательство
+- Услуги платформы (проверка документов 500₽, сопровождение ветеринара 7500₽)
 
 Стиль общения:
 - Тёплый, человечный стиль (как будто пишешь другу)
@@ -126,8 +128,8 @@ export default function ChatGPTPage() {
                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Анна</h1>
-                <p className="text-sm text-gray-500">Консультант • онлайн</p>
+                <h1 className="text-lg font-semibold text-gray-900">Арина</h1>
+                <p className="text-sm text-gray-500">Поддержка TinDog • онлайн</p>
               </div>
             </div>
             <div className="hidden lg:flex items-center gap-2">
@@ -157,10 +159,10 @@ export default function ChatGPTPage() {
                   <span className="text-white font-bold text-3xl">А</span>
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Привет! Я Анна 👋
+                  Привет! Я Арина 👋
                 </h2>
                 <p className="text-gray-600 mb-6 max-w-md">
-                  Эксперт по вязке собак. Помогу с подготовкой, документами и всеми вопросами о разведении
+                  Ассистент поддержки TinDog. Помогу с вопросами о платформе, вязке собак и всеми документами
                 </p>
 
                 <div className="w-full max-w-2xl">

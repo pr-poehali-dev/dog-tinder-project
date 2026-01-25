@@ -1,0 +1,2 @@
+ALTER TABLE t_p11971418_dog_tinder_project.users ADD COLUMN IF NOT EXISTS telegram_id VARCHAR(50);
+CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON t_p11971418_dog_tinder_project.users(telegram_id);

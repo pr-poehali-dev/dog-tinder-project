@@ -10,6 +10,7 @@ import Likes from "./pages/Likes";
 import Chats from "./pages/Chats";
 import Oferta from "./pages/Oferta";
 import YandexCallback from "./pages/YandexCallback";
+import TelegramCallback from "./pages/TelegramCallback";
 import ChatGPTPage from "./pages/ChatGPTPage";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/oferta" element={<Oferta />} />
           <Route path="/chatgpt" element={<ChatGPTPage />} />
           <Route path="/auth/yandex/callback" element={<YandexCallback />} />
+          <Route path="/auth/telegram/callback" element={<TelegramCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

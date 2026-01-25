@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import YandexLoginButton from '@/components/extensions/yandex-auth/YandexLoginButton';
+import TelegramLoginButton from '@/components/extensions/telegram-bot/TelegramLoginButton';
 import { useYandexAuth } from '@/components/extensions/yandex-auth/useYandexAuth';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import PetForm from '@/components/PetForm';
 
 const YANDEX_AUTH_URL = 'https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6';
+const TELEGRAM_BOT_USERNAME = 'YOUR_BOT_USERNAME'; // Замените на username вашего бота
 const PROFILE_API_URL = 'https://functions.poehali.dev/b66d2296-9572-4853-b419-769688fe6e4f';
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
 
@@ -571,10 +573,16 @@ export default function Profile() {
               <Icon name="Heart" size={32} className="text-pink-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Вход в TinDog</h2>
-            <p className="text-gray-600">Войдите через Яндекс для продолжения</p>
+            <p className="text-gray-600">Выберите способ входа</p>
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex flex-col gap-3">
+            <TelegramLoginButton
+              onClick={() => {
+                const botUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=web_auth`;
+                window.open(botUrl, '_blank');
+              }}
+            />
             <YandexLoginButton
               onClick={yandexAuth.login}
               isLoading={yandexAuth.isLoading}

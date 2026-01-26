@@ -82,6 +82,12 @@ export default function Profile() {
     if (yandexAuth.isAuthenticated && yandexAuth.user) {
       localStorage.setItem("user", JSON.stringify(yandexAuth.user));
       setUser(yandexAuth.user as User);
+      
+      // Автоматически показываем форму смены username для новых пользователей
+      const username = (yandexAuth.user as User).username || '';
+      if (username.startsWith('yandex')) {
+        setShowUsernameDialog(true);
+      }
     }
   }, [yandexAuth.isAuthenticated, yandexAuth.user]);
 

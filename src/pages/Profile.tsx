@@ -703,19 +703,17 @@ export default function Profile() {
           />
         )}
         
-        {user.username && (
-          <EditUsernameDialog
-            open={showUsernameDialog}
-            onOpenChange={setShowUsernameDialog}
-            currentUsername={user.username}
-            userId={user.id}
-            onSuccess={(newUsername) => {
-              const updatedUser = { ...user, username: newUsername };
-              setUser(updatedUser);
-              localStorage.setItem('user', JSON.stringify(updatedUser));
-            }}
-          />
-        )}
+        <EditUsernameDialog
+          open={showUsernameDialog}
+          onOpenChange={setShowUsernameDialog}
+          currentUsername={user.username || ''}
+          userId={user.id}
+          onSuccess={(newUsername) => {
+            const updatedUser = { ...user, username: newUsername };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          }}
+        />
       </div>
     );
   }

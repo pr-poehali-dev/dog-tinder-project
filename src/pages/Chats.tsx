@@ -119,7 +119,6 @@ export default function Chats() {
       
       if (data.has_process === false) {
         setHasBreedingProcess(false);
-        setBreedingStep('instruction');
       } else if (data.id) {
         setHasBreedingProcess(true);
       }
@@ -425,12 +424,39 @@ export default function Chats() {
           <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <BreedingMeetingPlanner
               withVet={breedingData.withVet}
-              onSubmit={(data) => {
-                setBreedingData({ ...breedingData, ...data });
+              onSubmit={async (data) => {
+                const updatedData = { ...breedingData, ...data };
+                setBreedingData(updatedData);
+                
                 if (breedingData.withVet) {
                   setBreedingStep('vet');
                 } else {
-                  handleCreateBreedingProcess();
+                  if (!selectedChat || !user) return;
+                  try {
+                    const response = await fetch(BREEDING_API_URL, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        action: 'create',
+                        chat_id: selectedChat.chat_id,
+                        pet1_id: selectedChat.pet1_id,
+                        pet2_id: selectedChat.pet2_id,
+                        user1_id: selectedChat.user1_id,
+                        user2_id: selectedChat.user2_id,
+                        meeting_date: data.date,
+                        meeting_time: data.time,
+                        location: data.location,
+                        address: data.address,
+                        with_vet: false,
+                      }),
+                    });
+                    const result = await response.json();
+                    if (result.id) {
+                      window.location.href = `/breeding-process?id=${result.id}`;
+                    }
+                  } catch (error) {
+                    console.error('Failed to create breeding process:', error);
+                  }
                 }
               }}
               onBack={() => setBreedingStep('service')}
@@ -443,9 +469,35 @@ export default function Chats() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <VeterinarianSelector
-              onSelect={(vetId) => {
-                setBreedingData({ ...breedingData, vetId });
-                handleCreateBreedingProcess();
+              onSelect={async (vetId) => {
+                if (!selectedChat || !user) return;
+                try {
+                  const response = await fetch(BREEDING_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'create',
+                      chat_id: selectedChat.chat_id,
+                      pet1_id: selectedChat.pet1_id,
+                      pet2_id: selectedChat.pet2_id,
+                      user1_id: selectedChat.user1_id,
+                      user2_id: selectedChat.user2_id,
+                      meeting_date: breedingData.date,
+                      meeting_time: breedingData.time,
+                      location: breedingData.location,
+                      address: breedingData.address,
+                      with_vet: true,
+                      vet_id: vetId,
+                      vet_name: 'Выбранный ветеринар',
+                    }),
+                  });
+                  const result = await response.json();
+                  if (result.id) {
+                    window.location.href = `/breeding-process?id=${result.id}`;
+                  }
+                } catch (error) {
+                  console.error('Failed to create breeding process:', error);
+                }
               }}
               onBack={() => setBreedingStep('meeting')}
             />

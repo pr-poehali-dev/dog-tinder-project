@@ -443,45 +443,6 @@ export default function Profile() {
                     Редактировать профиль
                   </Button>
 
-                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-4 border border-pink-200">
-                    <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                      <Icon
-                        name="Sparkles"
-                        size={18}
-                        className="text-pink-600"
-                      />
-                      Дополнительные услуги
-                    </h3>
-                    <div className="space-y-2">
-                      <Button
-                        onClick={() =>
-                          window.open(
-                            "https://yookassa.ru/integration/simplepay/payment/form/4ca14cac-c8ff-4ad2-aa7f-7d0b7fb51f5b",
-                            "_blank",
-                          )
-                        }
-                        variant="outline"
-                        className="w-full text-yellow-700 border-yellow-300 hover:bg-yellow-50"
-                      >
-                        <Icon name="ShieldCheck" size={18} />
-                        Проверка документов — 500 ₽
-                      </Button>
-                      <Button
-                        onClick={() =>
-                          window.open(
-                            "https://yookassa.ru/integration/simplepay/payment/form/0fa4e9ac-2dac-47ff-9cfd-e69974fa02fa",
-                            "_blank",
-                          )
-                        }
-                        variant="outline"
-                        className="w-full text-blue-700 border-blue-300 hover:bg-blue-50"
-                      >
-                        <Icon name="Stethoscope" size={18} />
-                        Сопровождение ветеринара — 7 500 ₽
-                      </Button>
-                    </div>
-                  </div>
-
                   <Button
                     variant="outline"
                     onClick={handleLogout}

@@ -1,0 +1,39 @@
+{
+  "tests": [
+    {
+      "name": "Create breeding process",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "create",
+        "chat_id": 1,
+        "pet1_id": 1,
+        "pet2_id": 2,
+        "user1_id": 1,
+        "user2_id": 2,
+        "meeting_date": "2026-02-15",
+        "meeting_time": "14:00",
+        "location": "male_home",
+        "with_vet": false
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "chat_id": "number",
+        "current_stage": "string",
+        "created_at": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Check if process exists",
+      "method": "GET",
+      "path": "/?chat_id=999&user_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "has_process": false
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

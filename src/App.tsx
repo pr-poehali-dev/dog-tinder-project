@@ -12,6 +12,7 @@ import Oferta from "./pages/Oferta";
 import YandexCallback from "./pages/YandexCallback";
 import TelegramCallback from "./pages/TelegramCallback";
 import ChatGPTPage from "./pages/ChatGPTPage";
+import BreedingProcess from "./pages/BreedingProcess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/chats" element={<Chats />} />
           <Route path="/oferta" element={<Oferta />} />
           <Route path="/chatgpt" element={<ChatGPTPage />} />
+          <Route path="/breeding-process" element={<BreedingProcess />} />
           <Route path="/auth/yandex/callback" element={<YandexCallback />} />
           <Route path="/auth/telegram/callback" element={<TelegramCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

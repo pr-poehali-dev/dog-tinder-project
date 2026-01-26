@@ -2,8 +2,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { useNotifications } from '@/hooks/useNotifications';
+import BreedingInstructionDialog from '@/components/BreedingInstructionDialog';
+import BreedingServiceSelection from '@/components/BreedingServiceSelection';
+import BreedingMeetingPlanner from '@/components/BreedingMeetingPlanner';
+import VeterinarianSelector from '@/components/VeterinarianSelector';
 
 const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
+const BREEDING_API_URL = 'https://functions.poehali.dev/9e55c198-d835-49ca-a996-fcdab68dad27';
 
 interface User {
   id: number;
@@ -36,6 +41,8 @@ interface Message {
   created_at: string;
 }
 
+type BreedingStep = 'instruction' | 'service' | 'meeting' | 'vet' | null;
+
 export default function Chats() {
   const [user, setUser] = useState<User | null>(null);
   const [chats, setChats] = useState<Chat[]>([]);
@@ -45,6 +52,17 @@ export default function Chats() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const { refresh } = useNotifications(user?.id || null);
+  
+  const [breedingStep, setBreedingStep] = useState<BreedingStep>(null);
+  const [hasBreedingProcess, setHasBreedingProcess] = useState(false);
+  const [breedingData, setBreedingData] = useState<{
+    withVet: boolean;
+    date?: string;
+    time?: string;
+    location?: 'male_home' | 'neutral';
+    address?: string;
+    vetId?: number;
+  }>({ withVet: false });
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -90,9 +108,24 @@ export default function Chats() {
     }
   };
 
-  const handleSelectChat = (chat: Chat) => {
+  const handleSelectChat = async (chat: Chat) => {
     setSelectedChat(chat);
     loadMessages(chat.chat_id);
+    
+    if (!user) return;
+    try {
+      const response = await fetch(`${BREEDING_API_URL}?chat_id=${chat.chat_id}&user_id=${user.id}`);
+      const data = await response.json();
+      
+      if (data.has_process === false) {
+        setHasBreedingProcess(false);
+        setBreedingStep('instruction');
+      } else if (data.id) {
+        setHasBreedingProcess(true);
+      }
+    } catch (error) {
+      console.error('Failed to check breeding process:', error);
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -118,6 +151,39 @@ export default function Chats() {
       console.error('Failed to send message:', error);
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleCreateBreedingProcess = async () => {
+    if (!selectedChat || !user || !breedingData.date || !breedingData.time || !breedingData.location) return;
+
+    try {
+      const response = await fetch(BREEDING_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          chat_id: selectedChat.chat_id,
+          pet1_id: selectedChat.pet1_id,
+          pet2_id: selectedChat.pet2_id,
+          user1_id: selectedChat.user1_id,
+          user2_id: selectedChat.user2_id,
+          meeting_date: breedingData.date,
+          meeting_time: breedingData.time,
+          location: breedingData.location,
+          address: breedingData.address,
+          with_vet: breedingData.withVet,
+          vet_id: breedingData.vetId,
+          vet_name: breedingData.vetId ? 'Выбранный ветеринар' : undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.id) {
+        window.location.href = `/breeding-process?id=${data.id}`;
+      }
+    } catch (error) {
+      console.error('Failed to create breeding process:', error);
     }
   };
 
@@ -290,25 +356,36 @@ export default function Chats() {
                     )}
                   </div>
 
-                  <form onSubmit={handleSendMessage} className="p-4 border-t">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Напишите сообщение..."
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                        disabled={isSending}
-                      />
-                      <Button type="submit" disabled={isSending || !newMessage.trim()}>
-                        {isSending ? (
-                          <Icon name="Loader2" size={20} className="animate-spin" />
-                        ) : (
-                          <Icon name="Send" size={20} />
-                        )}
+                  <div className="p-4 border-t space-y-3">
+                    {!hasBreedingProcess && (
+                      <Button
+                        onClick={() => setBreedingStep('instruction')}
+                        className="w-full bg-gradient-to-r from-pink-600 to-orange-600"
+                      >
+                        <Icon name="Heart" size={20} />
+                        Начать вязку
                       </Button>
-                    </div>
-                  </form>
+                    )}
+                    <form onSubmit={handleSendMessage}>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          placeholder="Напишите сообщение..."
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                          disabled={isSending}
+                        />
+                        <Button type="submit" disabled={isSending || !newMessage.trim()}>
+                          {isSending ? (
+                            <Icon name="Loader2" size={20} className="animate-spin" />
+                          ) : (
+                            <Icon name="Send" size={20} />
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
@@ -322,6 +399,59 @@ export default function Chats() {
           </div>
         )}
       </div>
+
+      <BreedingInstructionDialog
+        open={breedingStep === 'instruction'}
+        onOpenChange={(open) => !open && setBreedingStep(null)}
+        onStartBreeding={() => setBreedingStep('service')}
+      />
+
+      {breedingStep === 'service' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <BreedingServiceSelection
+              onSelect={(withVet) => {
+                setBreedingData({ ...breedingData, withVet });
+                setBreedingStep('meeting');
+              }}
+              onBack={() => setBreedingStep('instruction')}
+            />
+          </div>
+        </div>
+      )}
+
+      {breedingStep === 'meeting' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <BreedingMeetingPlanner
+              withVet={breedingData.withVet}
+              onSubmit={(data) => {
+                setBreedingData({ ...breedingData, ...data });
+                if (breedingData.withVet) {
+                  setBreedingStep('vet');
+                } else {
+                  handleCreateBreedingProcess();
+                }
+              }}
+              onBack={() => setBreedingStep('service')}
+            />
+          </div>
+        </div>
+      )}
+
+      {breedingStep === 'vet' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <VeterinarianSelector
+              onSelect={(vetId) => {
+                setBreedingData({ ...breedingData, vetId });
+                handleCreateBreedingProcess();
+              }}
+              onBack={() => setBreedingStep('meeting')}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

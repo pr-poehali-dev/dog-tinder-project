@@ -132,16 +132,14 @@ export default function EditUsernameDialog({
         data = await response.json();
       }
 
-      if (data.access_token) {
-        // Обновляем токены и данные пользователя
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token);
+      if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
-        onSuccess(username);
-        onOpenChange(false);
-      } else if (data.user) {
-        // Email auth returns user without tokens
-        localStorage.setItem('user', JSON.stringify(data.user));
+        if (data.access_token) {
+          localStorage.setItem('access_token', data.access_token);
+        }
+        if (data.refresh_token) {
+          localStorage.setItem('refresh_token', data.refresh_token);
+        }
         onSuccess(username);
         onOpenChange(false);
       } else {

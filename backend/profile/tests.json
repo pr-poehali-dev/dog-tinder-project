@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "Update profile name and city",
+      "method": "POST",
+      "body": {
+        "action": "update_profile",
+        "user_id": 1,
+        "name": "Test User",
+        "city": "Moscow"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user": {
+          "id": "number",
+          "email": "string",
+          "name": "string",
+          "city": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ const YANDEX_AUTH_URL =
   "https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6";
 const TELEGRAM_BOT_USERNAME = "tindog_bot"; // Замените на username вашего бота
 const PROFILE_API_URL =
-  "https://functions.poehali.dev/b66d2296-9572-4853-b419-769688fe6e4f";
+  "https://functions.poehali.dev/b2989243-6e4e-472c-9f80-2ae9d50a3a79";
 const PETS_API_URL =
   "https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c";
 

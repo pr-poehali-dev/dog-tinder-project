@@ -201,6 +201,7 @@ def verify_dog_image(image_data: str) -> bool:
     
     try:
         print(f'Starting dog verification for image (length: {len(image_data)})')
+        print(f'Using API key: {api_key[:10]}...')
         
         response = requests.post(
             'https://bothub.chat/api/v2/openai/v1/chat/completions',

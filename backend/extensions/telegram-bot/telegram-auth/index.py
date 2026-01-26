@@ -260,7 +260,7 @@ def get_user_by_id(cursor, user_id: int) -> Optional[dict]:
     """Get user by ID."""
     schema = get_schema()
     cursor.execute(f"""
-        SELECT id, email, name, avatar_url, telegram_id
+        SELECT id, email, name, avatar_url, telegram_id, username
         FROM {schema}users WHERE id = %s
     """, (user_id,))
 
@@ -272,6 +272,7 @@ def get_user_by_id(cursor, user_id: int) -> Optional[dict]:
             "name": row[2],
             "avatar_url": row[3],
             "telegram_id": row[4],
+            "username": row[5],
         }
     return None
 
@@ -485,6 +486,43 @@ def handle_set_username(cursor, body: dict) -> dict:
     })
 
 
+def handle_check_username(cursor, body: dict) -> dict:
+    """
+    POST ?action=check_username
+    Check if username is available.
+    """
+    username = body.get('username', '').strip().lower()
+    
+    if not username:
+        return cors_response(400, {'error': 'Username is required'})
+    
+    if len(username) < 3:
+        return cors_response(200, {'available': False, 'message': 'Minimum 3 characters'})
+    
+    schema = get_schema()
+    cursor.execute(f"SELECT id FROM {schema}users WHERE LOWER(username) = %s", (username,))
+    exists = cursor.fetchone()
+    
+    return cors_response(200, {
+        'available': not exists,
+        'message': 'Username available' if not exists else 'Username taken'
+    })
+
+
+def handle_generate_username(cursor, body: dict) -> dict:
+    """
+    POST ?action=generate_username
+    Generate unique username.
+    """
+    telegram_username = body.get('telegram_username', '')
+    telegram_id = body.get('telegram_id', '')
+    
+    base = telegram_username if telegram_username else f"user{telegram_id}"
+    username = generate_unique_username(cursor, base, telegram_id or str(secrets.randbits(32)))
+    
+    return cors_response(200, {'username': username})
+
+
 def handle_logout(cursor, body: dict) -> dict:
     """
     POST ?action=logout
@@ -537,6 +575,10 @@ def handler(event, context):
             response = handle_callback(cursor, body)
         elif action == "set_username" and method == "POST":
             response = handle_set_username(cursor, body)
+        elif action == "check_username" and method == "POST":
+            response = handle_check_username(cursor, body)
+        elif action == "generate_username" and method == "POST":
+            response = handle_generate_username(cursor, body)
         elif action == "refresh" and method == "POST":
             response = handle_refresh(cursor, body)
         elif action == "logout" and method == "POST":

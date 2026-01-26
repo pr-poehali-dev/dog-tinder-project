@@ -314,14 +314,15 @@ def handle_callback(event: dict, origin: str) -> dict:
 
             # 1. Check if user exists by yandex_id
             cur.execute(
-                f"SELECT id, email, name, avatar_url FROM {S}users WHERE yandex_id = %s",
+                f"SELECT id, email, name, avatar_url, username FROM {S}users WHERE yandex_id = %s",
                 (yandex_id,)
             )
             row = cur.fetchone()
+            needs_username_setup = False
 
             if row:
                 # User found by yandex_id - just login
-                user_id, db_email, db_name, db_avatar = row
+                user_id, db_email, db_name, db_avatar, username = row
                 cur.execute(
                     f"UPDATE {S}users SET last_login_at = %s, updated_at = %s WHERE id = %s",
                     (now, now, user_id)
@@ -329,18 +330,21 @@ def handle_callback(event: dict, origin: str) -> dict:
                 email = db_email or email
                 name = db_name or name
                 picture = db_avatar or picture
+                
+                if not username:
+                    needs_username_setup = True
             else:
                 # 2. Check if user exists by email - link Yandex account
                 if email:
                     cur.execute(
-                        f"SELECT id, name, avatar_url FROM {S}users WHERE email = %s",
+                        f"SELECT id, name, avatar_url, username FROM {S}users WHERE email = %s",
                         (email,)
                     )
                     row = cur.fetchone()
 
                 if email and row:
                     # User found by email - link Yandex account
-                    user_id, db_name, db_avatar = row
+                    user_id, db_name, db_avatar, username = row
                     cur.execute(
                         f"""UPDATE {S}users
                             SET yandex_id = %s, avatar_url = COALESCE(avatar_url, %s),
@@ -350,18 +354,40 @@ def handle_callback(event: dict, origin: str) -> dict:
                     )
                     name = db_name or name
                     picture = db_avatar or picture
+                    
+                    if not username:
+                        needs_username_setup = True
                 else:
-                    # 3. Create new user
-                    username = generate_unique_username(cur, S, email, yandex_id)
+                    # 3. Create new user WITHOUT username
                     cur.execute(
                         f"""INSERT INTO {S}users
                             (yandex_id, username, email, name, avatar_url, email_verified, password_hash, created_at, updated_at, last_login_at)
-                            VALUES (%s, %s, %s, %s, %s, TRUE, '', %s, %s, %s)
+                            VALUES (%s, NULL, %s, %s, %s, TRUE, '', %s, %s, %s)
                             RETURNING id""",
-                        (yandex_id, username, email, name, picture, now, now, now)
+                        (yandex_id, email, name, picture, now, now, now)
                     )
                     user_id = cur.fetchone()[0]
+                    username = None
+                    needs_username_setup = True
 
+            conn.commit()
+            
+            # If user doesn't have username - return needs_username flag
+            if needs_username_setup:
+                return response(200, {
+                    'needs_username': True,
+                    'user_id': user_id,
+                    'user': {
+                        'id': user_id,
+                        'email': email,
+                        'name': name,
+                        'avatar_url': picture,
+                        'yandex_id': yandex_id,
+                        'username': None
+                    }
+                }, origin)
+
+            # Generate tokens for users with username
             access_token, expires_in = create_access_token(user_id, email)
             refresh_token = create_refresh_token()
             refresh_token_hash = hash_token(refresh_token)
@@ -372,7 +398,6 @@ def handle_callback(event: dict, origin: str) -> dict:
                     VALUES (%s, %s, %s, %s)""",
                 (user_id, refresh_token_hash, refresh_expires, now)
             )
-
             conn.commit()
 
             return response(200, {
@@ -384,7 +409,8 @@ def handle_callback(event: dict, origin: str) -> dict:
                     'email': email,
                     'name': name,
                     'avatar_url': picture,
-                    'yandex_id': yandex_id
+                    'yandex_id': yandex_id,
+                    'username': username
                 }
             }, origin)
 
@@ -468,6 +494,136 @@ def handle_refresh(event: dict, origin: str) -> dict:
         conn.close()
 
 
+def handle_set_username(event: dict, origin: str) -> dict:
+    """Set username for user."""
+    body_str = event.get('body', '{}')
+    if event.get('isBase64Encoded'):
+        body_str = base64.b64decode(body_str).decode('utf-8')
+    
+    try:
+        payload = json.loads(body_str)
+    except json.JSONDecodeError:
+        return error(400, 'Invalid JSON', origin)
+    
+    user_id = payload.get('user_id')
+    username = payload.get('username', '').strip().lower()
+    
+    if not user_id or not username:
+        return error(400, 'user_id and username are required', origin)
+    
+    if len(username) < 3 or len(username) > 30:
+        return error(400, 'Username must be between 3 and 30 characters', origin)
+    
+    if not username.replace('_', '').isalnum():
+        return error(400, 'Username can only contain letters, numbers, and underscores', origin)
+    
+    S = get_schema()
+    conn = get_connection()
+    
+    try:
+        cur = conn.cursor()
+        
+        # Check if username is taken
+        cur.execute(f"SELECT id FROM {S}users WHERE username = %s AND id != %s", (username, user_id))
+        if cur.fetchone():
+            return error(400, 'Username already taken', origin)
+        
+        # Update user
+        cur.execute(
+            f"UPDATE {S}users SET username = %s, updated_at = %s WHERE id = %s RETURNING email, name, avatar_url, yandex_id",
+            (username, datetime.now(timezone.utc).isoformat(), user_id)
+        )
+        row = cur.fetchone()
+        if not row:
+            return error(404, 'User not found', origin)
+        
+        email, name, avatar_url, yandex_id = row
+        
+        # Generate tokens
+        access_token, expires_in = create_access_token(user_id, email)
+        refresh_token = create_refresh_token()
+        refresh_token_hash = hash_token(refresh_token)
+        refresh_expires = (datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)).isoformat()
+        
+        cur.execute(
+            f"INSERT INTO {S}refresh_tokens (user_id, token_hash, expires_at, created_at) VALUES (%s, %s, %s, %s)",
+            (user_id, refresh_token_hash, refresh_expires, datetime.now(timezone.utc).isoformat())
+        )
+        
+        conn.commit()
+        
+        return response(200, {
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'expires_in': expires_in,
+            'user': {
+                'id': user_id,
+                'email': email,
+                'name': name,
+                'avatar_url': avatar_url,
+                'yandex_id': yandex_id,
+                'username': username
+            }
+        }, origin)
+    except Exception:
+        if conn:
+            conn.rollback()
+        return error(500, 'Internal server error', origin)
+    finally:
+        if conn:
+            conn.close()
+
+
+def handle_check_username(event: dict, origin: str) -> dict:
+    """Check if username is available."""
+    query = event.get('queryStringParameters', {}) or {}
+    username = query.get('username', '').strip().lower()
+    
+    if not username:
+        return error(400, 'username is required', origin)
+    
+    if len(username) < 3:
+        return response(200, {'available': False, 'message': 'Minimum 3 characters'}, origin)
+    
+    S = get_schema()
+    conn = get_connection()
+    
+    try:
+        cur = conn.cursor()
+        cur.execute(f"SELECT id FROM {S}users WHERE LOWER(username) = %s", (username,))
+        exists = cur.fetchone()
+        
+        return response(200, {
+            'available': not exists,
+            'message': 'Username available' if not exists else 'Username taken'
+        }, origin)
+    except Exception:
+        return error(500, 'Internal server error', origin)
+    finally:
+        if conn:
+            conn.close()
+
+
+def handle_generate_username(event: dict, origin: str) -> dict:
+    """Generate unique username."""
+    query = event.get('queryStringParameters', {}) or {}
+    email = query.get('email', '')
+    yandex_id = query.get('yandex_id', str(secrets.randbits(32)))
+    
+    S = get_schema()
+    conn = get_connection()
+    
+    try:
+        cur = conn.cursor()
+        username = generate_unique_username(cur, S, email, yandex_id)
+        return response(200, {'username': username}, origin)
+    except Exception:
+        return error(500, 'Internal server error', origin)
+    finally:
+        if conn:
+            conn.close()
+
+
 def handle_logout(event: dict, origin: str) -> dict:
     """Logout user by invalidating refresh token."""
     body_str = event.get('body', '{}')
@@ -521,6 +677,9 @@ def handler(event: dict, context) -> dict:
         'callback': handle_callback,
         'refresh': handle_refresh,
         'logout': handle_logout,
+        'set-username': handle_set_username,
+        'check-username': handle_check_username,
+        'generate-username': handle_generate_username,
     }
 
     if action not in handlers:

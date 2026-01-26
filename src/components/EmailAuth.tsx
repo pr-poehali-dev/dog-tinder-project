@@ -2,21 +2,25 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
-const AUTH_URL = 'https://functions.poehali.dev/b66d2296-9572-4853-b419-769688fe6e4f';
+const AUTH_URL = 'https://functions.poehali.dev/1a7a39de-f267-44a5-aaf6-04b5c3610d87';
 
 interface EmailAuthProps {
   onSuccess: (email: string) => void;
 }
 
 export default function EmailAuth({ onSuccess }: EmailAuthProps) {
-  const [step, setStep] = useState<'email' | 'code'>('email');
+  const [step, setStep] = useState<'email' | 'code' | 'username'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [username, setUsername] = useState('');
+  const [suggestedUsername, setSuggestedUsername] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [verificationData, setVerificationData] = useState<{
     code: string;
     expires_at: number;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [error, setError] = useState('');
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -44,6 +48,21 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
         code: data.code,
         expires_at: data.expires_at,
       });
+      
+      const usernameResponse = await fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate_username',
+          email: email.trim().toLowerCase(),
+        }),
+      });
+      const usernameData = await usernameResponse.json();
+      if (usernameData.username) {
+        setSuggestedUsername(usernameData.username);
+        setUsername(usernameData.username);
+      }
+      
       setStep('code');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка отправки');
@@ -53,6 +72,58 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
   };
 
   const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (code.length !== 6) {
+      setError('Введите 6-значный код');
+      return;
+    }
+
+    if (!verificationData) {
+      setError('Нет данных для проверки');
+      return;
+    }
+
+    if (code.trim() !== verificationData.code) {
+      setError('Неверный код');
+      return;
+    }
+
+    setStep('username');
+  };
+
+  const checkUsernameAvailability = async (value: string) => {
+    if (value.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    try {
+      const response = await fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'check_username',
+          username: value,
+        }),
+      });
+      const data = await response.json();
+      setUsernameAvailable(data.available);
+    } catch (err) {
+      setUsernameAvailable(null);
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+    checkUsernameAvailability(value);
+  };
+
+  const handleCompleteRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -73,13 +144,14 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
           code: code.trim(),
           expected_code: verificationData.code,
           expires_at: verificationData.expires_at,
+          username: username.trim(),
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Неверный код');
+        throw new Error(data.error || 'Ошибка регистрации');
       }
 
       if (data.authenticated && data.user) {
@@ -87,11 +159,103 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
         onSuccess(email);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка проверки');
+      setError(err instanceof Error ? err.message : 'Ошибка регистрации');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (step === 'username') {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg p-8">
+        <button
+          onClick={() => {
+            setStep('code');
+            setError('');
+          }}
+          className="flex items-center gap-2 text-gray-600 hover:text-pink-600 mb-6"
+        >
+          <Icon name="ArrowLeft" size={20} />
+          Назад
+        </button>
+
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Выберите username</h2>
+        <p className="text-gray-600 mb-6">
+          Придумайте уникальный username или используйте предложенный
+        </p>
+
+        <form onSubmit={handleCompleteRegistration} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Username
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => handleUsernameChange(e.target.value)}
+                placeholder="username"
+                minLength={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                required
+              />
+              {isCheckingUsername && (
+                <div className="absolute right-3 top-3">
+                  <Icon name="Loader2" size={20} className="animate-spin text-gray-400" />
+                </div>
+              )}
+            </div>
+            {username.length >= 3 && usernameAvailable !== null && (
+              <p className={`text-sm mt-2 ${usernameAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                {usernameAvailable ? '✓ Username свободен' : '✗ Username занят'}
+              </p>
+            )}
+            {username.length < 3 && username.length > 0 && (
+              <p className="text-sm mt-2 text-gray-500">Минимум 3 символа</p>
+            )}
+          </div>
+
+          {suggestedUsername && username !== suggestedUsername && (
+            <button
+              type="button"
+              onClick={() => {
+                setUsername(suggestedUsername);
+                setUsernameAvailable(true);
+              }}
+              className="text-sm text-pink-600 hover:text-pink-700 underline"
+            >
+              Использовать предложенный: {suggestedUsername}
+            </button>
+          )}
+
+          {error && (
+            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+              <Icon name="AlertCircle" size={18} />
+              {error}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            disabled={isLoading || !username || username.length < 3 || usernameAvailable === false}
+            className="w-full"
+          >
+            {isLoading ? (
+              <>
+                <Icon name="Loader2" size={20} className="animate-spin" />
+                Завершение...
+              </>
+            ) : (
+              <>
+                <Icon name="CheckCircle" size={20} />
+                Завершить регистрацию
+              </>
+            )}
+          </Button>
+        </form>
+      </div>
+    );
+  }
 
   if (step === 'code') {
     return (
@@ -138,20 +302,11 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
 
           <Button
             type="submit"
-            disabled={isLoading || code.length !== 6}
+            disabled={code.length !== 6}
             className="w-full"
           >
-            {isLoading ? (
-              <>
-                <Icon name="Loader2" size={20} className="animate-spin" />
-                Проверка...
-              </>
-            ) : (
-              <>
-                <Icon name="CheckCircle" size={20} />
-                Войти
-              </>
-            )}
+            <Icon name="ArrowRight" size={20} />
+            Продолжить
           </Button>
         </form>
       </div>

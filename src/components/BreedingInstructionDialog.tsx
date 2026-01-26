@@ -108,8 +108,8 @@ export default function BreedingInstructionDialog({
             </Button>
             <Button
               onClick={() => {
-                onStartBreeding();
                 onOpenChange(false);
+                setTimeout(() => onStartBreeding(), 100);
               }}
               className="flex-1 bg-gradient-to-r from-pink-600 to-orange-600"
             >

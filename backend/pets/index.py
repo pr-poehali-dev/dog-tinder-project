@@ -236,7 +236,8 @@ def verify_dog_image(image_data: str) -> bool:
         print(f'AI response status: {response.status_code}')
         
         if response.status_code == 401:
-            print(f'ERROR: AI API key is invalid (401 UNAUTHORIZED). Please update POLZA_AI_API_KEY secret.')
+            print(f'ERROR: AI API key is invalid (401 UNAUTHORIZED).')
+            print(f'Response body: {response.text}')
             print(f'WARNING: Skipping verification due to invalid API key')
             return True
         

@@ -443,17 +443,38 @@ def handle_set_username(cursor, body: dict) -> dict:
     
     schema = get_schema()
     
+    # Check if user exists and get current username data
+    cursor.execute(f"SELECT username, username_updated_at FROM {schema}users WHERE id = %s", (user_id,))
+    user_data = cursor.fetchone()
+    
+    if not user_data:
+        return cors_response(400, {'error': 'User not found'})
+    
+    current_username, username_updated_at = user_data
+    
+    # Check 30-day limit for username change (only if changing existing username)
+    if current_username and username_updated_at:
+        now = datetime.now(timezone.utc)
+        if username_updated_at.tzinfo is None:
+            username_updated_at = username_updated_at.replace(tzinfo=timezone.utc)
+        
+        days_since_update = (now - username_updated_at).days
+        
+        if days_since_update < 30:
+            days_remaining = 30 - days_since_update
+            return cors_response(400, {'error': f'Username can be changed in {days_remaining} days'})
+    
     # Check if username is already taken by another user
     cursor.execute(f"SELECT id FROM {schema}users WHERE username = %s AND id != %s", (new_username, user_id))
     if cursor.fetchone():
         return cors_response(400, {'error': 'Username already taken'})
     
-    # Update user with new username (allow changing existing username)
+    # Update user with new username and timestamp
     cursor.execute(f"""
         UPDATE {schema}users
-        SET username = %s, updated_at = NOW()
+        SET username = %s, username_updated_at = NOW(), updated_at = NOW()
         WHERE id = %s
-        RETURNING id, email, name, avatar_url, telegram_id, username, phone
+        RETURNING id, email, name, avatar_url, telegram_id, username, phone, username_updated_at
     """, (new_username, user_id))
     
     row = cursor.fetchone()
@@ -468,6 +489,7 @@ def handle_set_username(cursor, body: dict) -> dict:
         "telegram_id": row[4],
         "username": row[5],
         "phone": row[6],
+        "username_updated_at": row[7].isoformat() if row[7] else None,
     }
     
     # Generate tokens

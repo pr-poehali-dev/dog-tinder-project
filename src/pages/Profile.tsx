@@ -19,6 +19,7 @@ interface User {
   id: number;
   email: string;
   username?: string;
+  username_updated_at?: string | null;
   name?: string;
   phone?: string;
   city?: string;
@@ -708,8 +709,9 @@ export default function Profile() {
           onOpenChange={setShowUsernameDialog}
           currentUsername={user.username || ''}
           userId={user.id}
+          usernameUpdatedAt={user.username_updated_at}
           onSuccess={(newUsername) => {
-            const updatedUser = { ...user, username: newUsername };
+            const updatedUser = { ...user, username: newUsername, username_updated_at: new Date().toISOString() };
             setUser(updatedUser);
             localStorage.setItem('user', JSON.stringify(updatedUser));
           }}

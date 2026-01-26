@@ -33,6 +33,8 @@ def handler(event: dict, context) -> dict:
             return check_username_availability(body)
         elif action == 'generate_username':
             return generate_unique_username(body)
+        elif action == 'set_username':
+            return set_username(body)
         else:
             return {
                 'statusCode': 400,
@@ -135,34 +137,42 @@ def verify_code_and_register(body: dict) -> dict:
                 }
             else:
                 cur.execute(
-                    "UPDATE t_p11971418_dog_tinder_project.users SET username = %s, email_verified = true WHERE id = %s RETURNING id, email, username, name, avatar_url",
+                    "UPDATE t_p11971418_dog_tinder_project.users SET username = %s, username_updated_at = NOW(), email_verified = true WHERE id = %s RETURNING id, email, username, name, avatar_url, username_updated_at",
                     (username, user['id'])
                 )
                 updated_user = cur.fetchone()
                 conn.commit()
+                
+                user_dict = dict(updated_user)
+                if user_dict.get('username_updated_at'):
+                    user_dict['username_updated_at'] = user_dict['username_updated_at'].isoformat()
                 
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({
                         'authenticated': True,
-                        'user': dict(updated_user)
+                        'user': user_dict
                     })
                 }
         else:
             cur.execute(
-                "INSERT INTO t_p11971418_dog_tinder_project.users (email, username, email_verified) VALUES (%s, %s, true) RETURNING id, email, username, name, avatar_url",
+                "INSERT INTO t_p11971418_dog_tinder_project.users (email, username, email_verified, username_updated_at) VALUES (%s, %s, true, NOW()) RETURNING id, email, username, name, avatar_url, username_updated_at",
                 (email, username)
             )
             new_user = cur.fetchone()
             conn.commit()
+            
+            user_dict = dict(new_user)
+            if user_dict.get('username_updated_at'):
+                user_dict['username_updated_at'] = user_dict['username_updated_at'].isoformat()
             
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({
                     'authenticated': True,
-                    'user': dict(new_user)
+                    'user': user_dict
                 })
             }
     finally:
@@ -240,6 +250,98 @@ def generate_unique_username(body: dict) -> dict:
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'error': 'Не удалось сгенерировать username'})
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+def set_username(body: dict) -> dict:
+    '''Обновить username с проверкой 30-дневного ограничения'''
+    user_id = body.get('user_id')
+    new_username = body.get('username', '').strip().lower()
+    
+    if not user_id or not new_username:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'user_id и username обязательны'})
+        }
+    
+    if len(new_username) < 3 or len(new_username) > 30:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Username должен быть от 3 до 30 символов'})
+        }
+    
+    if not new_username.replace('_', '').isalnum():
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Username может содержать только буквы, цифры и _'})
+        }
+    
+    dsn = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(dsn)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        cur.execute(
+            "SELECT username, username_updated_at FROM t_p11971418_dog_tinder_project.users WHERE id = %s",
+            (user_id,)
+        )
+        user_data = cur.fetchone()
+        
+        if not user_data:
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Пользователь не найден'})
+            }
+        
+        current_username = user_data['username']
+        username_updated_at = user_data['username_updated_at']
+        
+        if current_username and username_updated_at:
+            import datetime
+            now = datetime.datetime.now()
+            days_since_update = (now - username_updated_at).days
+            
+            if days_since_update < 30:
+                days_remaining = 30 - days_since_update
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': f'Изменить username можно через {days_remaining} дн.'})
+                }
+        
+        cur.execute(
+            "SELECT id FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER(%s) AND id != %s",
+            (new_username, user_id)
+        )
+        
+        if cur.fetchone():
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Username уже занят'})
+            }
+        
+        cur.execute(
+            "UPDATE t_p11971418_dog_tinder_project.users SET username = %s, username_updated_at = NOW() WHERE id = %s RETURNING id, email, username, name, avatar_url, username_updated_at",
+            (new_username, user_id)
+        )
+        updated_user = cur.fetchone()
+        conn.commit()
+        
+        user_dict = dict(updated_user)
+        if user_dict.get('username_updated_at'):
+            user_dict['username_updated_at'] = user_dict['username_updated_at'].isoformat()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'user': user_dict})
         }
     finally:
         cur.close()

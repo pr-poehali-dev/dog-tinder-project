@@ -194,9 +194,12 @@ def verify_dog_image(image_data: str) -> bool:
     
     api_key = os.environ.get('POLZA_AI_API_KEY')
     if not api_key:
+        print('POLZA_AI_API_KEY not found, skipping verification')
         return True
     
     try:
+        print(f'Starting dog verification for image (length: {len(image_data)})')
+        
         response = requests.post(
             'https://bothub.chat/api/v2/openai/v1/chat/completions',
             headers={
@@ -211,7 +214,7 @@ def verify_dog_image(image_data: str) -> bool:
                         'content': [
                             {
                                 'type': 'text',
-                                'text': 'На этом изображении есть собака? Ответь ТОЛЬКО "да" или "нет".'
+                                'text': 'Analyze this image. Is there a dog in it? Answer ONLY with "YES" if there is a dog, or "NO" if there is no dog.'
                             },
                             {
                                 'type': 'image_url',
@@ -227,13 +230,21 @@ def verify_dog_image(image_data: str) -> bool:
             timeout=15
         )
         
+        print(f'AI response status: {response.status_code}')
+        
         if response.status_code != 200:
+            print(f'AI API error: {response.text}')
             return True
         
         result = response.json()
         answer = result.get('choices', [{}])[0].get('message', {}).get('content', '').lower().strip()
         
-        return 'да' in answer or 'yes' in answer
+        print(f'AI answer: {answer}')
+        
+        is_dog = 'yes' in answer or 'да' in answer
+        print(f'Dog detected: {is_dog}')
+        
+        return is_dog
         
     except Exception as e:
         print(f'Image verification failed: {str(e)}')

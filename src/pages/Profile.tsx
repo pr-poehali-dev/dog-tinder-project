@@ -323,7 +323,7 @@ export default function Profile() {
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
                 Личный кабинет
               </h1>
-              {user.username && (
+              {user.username ? (
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <span className="text-gray-600">@{user.username}</span>
                   <button
@@ -333,6 +333,13 @@ export default function Profile() {
                     <Icon name="Edit" size={14} />
                   </button>
                 </div>
+              ) : (
+                <button
+                  onClick={() => setShowUsernameDialog(true)}
+                  className="text-pink-600 hover:text-pink-700 text-sm mb-1"
+                >
+                  Добавить username
+                </button>
               )}
               <p className="text-gray-600">{user.email}</p>
             </div>

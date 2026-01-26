@@ -5,6 +5,7 @@ from psycopg2.extras import RealDictCursor
 import boto3
 import base64
 import uuid
+import requests
 
 def handler(event: dict, context) -> dict:
     """API для управления объявлениями о питомцах"""
@@ -188,8 +189,59 @@ def create_pet(event: dict, conn) -> dict:
         }
 
 
+def verify_dog_image(image_data: str) -> bool:
+    """Проверить, что на изображении собака через AI"""
+    
+    api_key = os.environ.get('POLZA_AI_API_KEY')
+    if not api_key:
+        return True
+    
+    try:
+        response = requests.post(
+            'https://bothub.chat/api/v2/openai/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'gpt-4o-mini',
+                'messages': [
+                    {
+                        'role': 'user',
+                        'content': [
+                            {
+                                'type': 'text',
+                                'text': 'На этом изображении есть собака? Ответь ТОЛЬКО "да" или "нет".'
+                            },
+                            {
+                                'type': 'image_url',
+                                'image_url': {
+                                    'url': image_data if image_data.startswith('data:') else f'data:image/jpeg;base64,{image_data}'
+                                }
+                            }
+                        ]
+                    }
+                ],
+                'max_tokens': 10
+            },
+            timeout=15
+        )
+        
+        if response.status_code != 200:
+            return True
+        
+        result = response.json()
+        answer = result.get('choices', [{}])[0].get('message', {}).get('content', '').lower().strip()
+        
+        return 'да' in answer or 'yes' in answer
+        
+    except Exception as e:
+        print(f'Image verification failed: {str(e)}')
+        return True
+
+
 def upload_photo(body: dict) -> dict:
-    """Загрузить фото питомца в S3"""
+    """Загрузить фото питомца в S3 с проверкой на наличие собаки"""
     
     image = body.get('image')
     if not image:
@@ -200,8 +252,18 @@ def upload_photo(body: dict) -> dict:
             'isBase64Encoded': False
         }
     
+    original_image = image
     if ',' in image:
         image = image.split(',')[1]
+    
+    is_dog = verify_dog_image(original_image)
+    if not is_dog:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'На фото должна быть собака. Пожалуйста, загрузите фотографию вашего питомца.'}),
+            'isBase64Encoded': False
+        }
     
     image_data = base64.b64decode(image)
     

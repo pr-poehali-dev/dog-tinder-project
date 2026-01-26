@@ -42,6 +42,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
   const [wantsVerification, setWantsVerification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
+  const [isCheckingPhoto, setIsCheckingPhoto] = useState(false);
 
   const calculateRecommendedPrice = (): number | null => {
     const breedPrices: { [key: string]: number } = {
@@ -133,6 +134,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
       let photoUrl = '';
 
       if (photoFile) {
+        setIsCheckingPhoto(true);
         const reader = new FileReader();
         const base64Photo = await new Promise<string>((resolve) => {
           reader.onload = () => resolve(reader.result as string);
@@ -145,8 +147,11 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
           body: JSON.stringify({ action: 'upload_photo', image: base64Photo }),
         });
         
+        setIsCheckingPhoto(false);
+        
         if (!photoResponse.ok) {
-          throw new Error('Не удалось загрузить фото');
+          const errorData = await photoResponse.json();
+          throw new Error(errorData.error || 'Не удалось загрузить фото');
         }
         
         const photoData = await photoResponse.json();
@@ -239,16 +244,24 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex justify-center mb-4">
               <label className="cursor-pointer">
-                <div className="w-32 h-32 rounded-full border-4 border-pink-200 overflow-hidden bg-pink-50 flex items-center justify-center">
+                <div className="w-32 h-32 rounded-full border-4 border-pink-200 overflow-hidden bg-pink-50 flex items-center justify-center relative">
                   {photoPreview ? (
                     <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
                     <Icon name="Camera" size={48} className="text-pink-400" />
                   )}
+                  {isCheckingPhoto && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Icon name="Loader2" size={32} className="animate-spin text-white" />
+                    </div>
+                  )}
                 </div>
                 <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
               </label>
             </div>
+            <p className="text-center text-sm text-gray-500 mb-4">
+              Загрузите фото вашей собаки
+            </p>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -614,15 +627,20 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
             )}
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? (
-                  <Icon name="Loader2" size={20} className="animate-spin" />
+              <Button type="submit" disabled={isSubmitting || isCheckingPhoto} className="flex-1">
+                {isSubmitting || isCheckingPhoto ? (
+                  <>
+                    <Icon name="Loader2" size={20} className="animate-spin" />
+                    {isCheckingPhoto ? 'Проверка фото...' : 'Публикация...'}
+                  </>
                 ) : (
-                  <Icon name="Check" size={20} />
+                  <>
+                    <Icon name="Check" size={20} />
+                    Опубликовать
+                  </>
                 )}
-                Опубликовать
               </Button>
-              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting || isCheckingPhoto} className="flex-1">
                 Отмена
               </Button>
             </div>

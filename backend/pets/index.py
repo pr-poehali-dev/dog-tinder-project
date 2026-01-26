@@ -210,7 +210,7 @@ def verify_dog_image(image_data: str) -> bool:
                 'Content-Type': 'application/json'
             },
             json={
-                'model': 'gpt-4o-mini',
+                'model': 'gpt-4o',
                 'messages': [
                     {
                         'role': 'user',

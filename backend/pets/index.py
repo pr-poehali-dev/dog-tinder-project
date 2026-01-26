@@ -3,6 +3,8 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import boto3
+
+# Force redeploy to update POLZA_AI_API_KEY secret
 import base64
 import uuid
 import requests

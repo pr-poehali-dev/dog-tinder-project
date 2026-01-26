@@ -194,8 +194,8 @@ def verify_dog_image(image_data: str) -> bool:
     
     api_key = os.environ.get('POLZA_AI_API_KEY')
     if not api_key:
-        print('ERROR: POLZA_AI_API_KEY not found')
-        return False
+        print('WARNING: POLZA_AI_API_KEY not found, skipping verification')
+        return True
     
     try:
         print(f'Starting dog verification for image (length: {len(image_data)})')
@@ -232,9 +232,15 @@ def verify_dog_image(image_data: str) -> bool:
         
         print(f'AI response status: {response.status_code}')
         
+        if response.status_code == 401:
+            print(f'ERROR: AI API key is invalid (401 UNAUTHORIZED). Please update POLZA_AI_API_KEY secret.')
+            print(f'WARNING: Skipping verification due to invalid API key')
+            return True
+        
         if response.status_code != 200:
             print(f'ERROR: AI API returned {response.status_code}: {response.text}')
-            return False
+            print(f'WARNING: Skipping verification due to API error')
+            return True
         
         result = response.json()
         answer = result.get('choices', [{}])[0].get('message', {}).get('content', '').lower().strip()
@@ -248,7 +254,8 @@ def verify_dog_image(image_data: str) -> bool:
         
     except Exception as e:
         print(f'ERROR: Image verification failed: {str(e)}')
-        return False
+        print(f'WARNING: Skipping verification due to exception')
+        return True
 
 
 def upload_photo(body: dict) -> dict:

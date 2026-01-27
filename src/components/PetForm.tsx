@@ -440,13 +440,7 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
       </div>
     </div>
   );
-}<bsystrayder2" size={32} className="animate-spin text-white" />
-                    </div>
-                  )}
-                </div>
-                <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
-              </label>
-            </div>
+}
             <p className="text-center text-sm text-gray-500 mb-4">
               Загрузите фото вашей собаки
             </p>

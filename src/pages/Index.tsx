@@ -7,6 +7,8 @@ import { requestNotificationPermission } from '@/utils/notifications';
 import SwipeCard from '@/components/SwipeCard';
 import confetti from 'canvas-confetti';
 import TelegramLoginButton from '@/components/extensions/telegram-bot/TelegramLoginButton';
+import AuthForm from '@/components/AuthForm';
+import { getCurrentUser, logout } from '@/lib/auth';
 
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
 const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
@@ -52,16 +54,25 @@ export default function Index() {
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('swipe');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showAuthForm, setShowAuthForm] = useState(false);
   const { counts } = useNotifications(user?.id || null);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      setUser(userData);
-      loadMyPet(userData.id);
-      loadMyLikes(userData.id);
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+      loadMyPet(currentUser.id);
+      loadMyLikes(currentUser.id);
       requestNotificationPermission();
+    } else {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        loadMyPet(userData.id);
+        loadMyLikes(userData.id);
+        requestNotificationPermission();
+      }
     }
     loadPets();
   }, []);

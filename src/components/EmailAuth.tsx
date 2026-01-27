@@ -9,6 +9,7 @@ interface EmailAuthProps {
 }
 
 export default function EmailAuth({ onSuccess }: EmailAuthProps) {
+  const [authMode, setAuthMode] = useState<'code' | 'password'>('code');
   const [step, setStep] = useState<'email' | 'code' | 'username'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -22,6 +23,41 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [error, setError] = useState('');
+
+  const handlePasswordAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const isLogin = !username;
+      const response = await fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: isLogin ? 'login' : 'register',
+          email: email.trim().toLowerCase(),
+          password: code,
+          ...(isLogin ? {} : { username: username.trim() })
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка авторизации');
+      }
+
+      if (data.authenticated || data.success) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        onSuccess(email);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка авторизации');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,6 +200,103 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
       setIsLoading(false);
     }
   };
+
+  if (authMode === 'password') {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg p-8">
+        <button
+          onClick={() => setAuthMode('code')}
+          className="flex items-center gap-2 text-gray-600 hover:text-pink-600 mb-6"
+        >
+          <Icon name="ArrowLeft" size={20} />
+          Вход через код
+        </button>
+
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          {username ? 'Регистрация' : 'Вход'}
+        </h2>
+        <p className="text-gray-600 mb-6">
+          {username ? 'Создайте аккаунт с паролем' : 'Войдите по email и паролю'}
+        </p>
+
+        <form onSubmit={handlePasswordAuth} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          {username !== '' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="username"
+                minLength={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                required
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Пароль
+            </label>
+            <input
+              type="password"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="••••••••"
+              minLength={6}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+              <Icon name="AlertCircle" size={18} />
+              {error}
+            </div>
+          )}
+
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? (
+              <>
+                <Icon name="Loader2" size={20} className="animate-spin" />
+                Загрузка...
+              </>
+            ) : username !== '' ? (
+              'Зарегистрироваться'
+            ) : (
+              'Войти'
+            )}
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => setUsername(username === '' ? ' ' : '')}
+            className="w-full text-center text-sm text-pink-600 hover:underline"
+          >
+            {username === '' ? 'Нет аккаунта? Зарегистрируйтесь' : 'Уже есть аккаунт? Войдите'}
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   if (step === 'username') {
     return (
@@ -358,6 +491,14 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
             </>
           )}
         </Button>
+
+        <button
+          type="button"
+          onClick={() => setAuthMode('password')}
+          className="w-full text-center text-sm text-pink-600 hover:underline mt-4"
+        >
+          Войти с паролем
+        </button>
       </form>
     </div>
   );

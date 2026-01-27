@@ -141,21 +141,36 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
           reader.readAsDataURL(photoFile);
         });
 
-        const photoResponse = await fetch(PETS_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'upload_photo', image: base64Photo }),
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
         
-        setIsCheckingPhoto(false);
-        
-        if (!photoResponse.ok) {
-          const errorData = await photoResponse.json();
-          throw new Error(errorData.error || 'Не удалось загрузить фото');
+        try {
+          const photoResponse = await fetch(PETS_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'upload_photo', image: base64Photo }),
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          setIsCheckingPhoto(false);
+          
+          if (!photoResponse.ok) {
+            const errorData = await photoResponse.json();
+            throw new Error(errorData.error || 'Не удалось загрузить фото');
+          }
+          
+          const photoData = await photoResponse.json();
+          photoUrl = photoData.url;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          setIsCheckingPhoto(false);
+          if (err instanceof Error && err.name === 'AbortError') {
+            throw new Error('Проверка фото заняла слишком много времени. Попробуйте ещё раз.');
+          }
+          throw err;
         }
-        
-        const photoData = await photoResponse.json();
-        photoUrl = photoData.url;
       }
 
       const petResponse = await fetch(
@@ -252,7 +267,180 @@ export default function PetForm({ userId, editingPet, onSuccess, onCancel }: Pet
                   )}
                   {isCheckingPhoto && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Icon name="Loader2" size={32} className="animate-spin text-white" />
+                      <Icon name="Loader2" className="animate-spin text-white" size={32} />
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            
+            {isCheckingPhoto && (
+              <div className="text-center text-pink-600 font-medium">
+                Проверяем фото... Это может занять до 30 секунд
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">Имя *</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">Порода</label>
+              <input
+                type="text"
+                value={formData.breed}
+                onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                placeholder="Например: Хаски"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">Возраст</label>
+                <input
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  placeholder="Лет"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">Пол</label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                >
+                  <option value="male">Мальчик</option>
+                  <option value="female">Девочка</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">Город</label>
+              <input
+                type="text"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                placeholder="Например: Москва"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">Звание/Титул</label>
+              <input
+                type="text"
+                value={formData.rank}
+                onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                placeholder="Например: Чемпион России"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">Описание</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 h-24"
+                placeholder="Расскажите о своём питомце..."
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">Цена вязки (₽)</label>
+              <input
+                type="number"
+                value={formData.breeding_price}
+                onChange={(e) => setFormData({ ...formData, breeding_price: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                placeholder="Укажите цену"
+              />
+              {recommendedPrice && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Рекомендуемая цена: {recommendedPrice.toLocaleString()} ₽
+                </p>
+              )}
+            </div>
+            
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold mb-3 text-gray-800">Верификация</h3>
+              
+              <div className="mb-4">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Документы (паспорт, родословная)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handleDocumentChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                />
+                {documentFile && (
+                  <p className="text-sm text-green-600 mt-1">✓ {documentFile.name}</p>
+                )}
+              </div>
+              
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={wantsVerification}
+                  onChange={(e) => setWantsVerification(e.target.checked)}
+                  className="w-5 h-5 text-pink-500 rounded focus:ring-2 focus:ring-pink-400"
+                />
+                <span className="text-gray-700">
+                  Оплатить верификацию (500 ₽) - получите галочку подтверждения
+                </span>
+              </label>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="submit"
+                disabled={isSubmitting || isCheckingPhoto}
+                className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold py-3 rounded-lg hover:from-pink-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Сохранение...' : (editingPet ? 'Сохранить' : 'Опубликовать')}
+              </Button>
+              <Button
+                type="button"
+                onClick={onCancel}
+                disabled={isSubmitting || isCheckingPhoto}
+                className="px-6 bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Отмена
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}<bsystrayder2" size={32} className="animate-spin text-white" />
                     </div>
                   )}
                 </div>

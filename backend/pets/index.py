@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import boto3
 
-# Force redeploy: Updated POLZA_AI_API_KEY to new BotHub JWT token (Jan 27, 2026)
+# Force redeploy v2: Updated POLZA_AI_API_KEY to new BotHub JWT token (Jan 27, 2026, 05:27 UTC)
 import base64
 import uuid
 import requests
@@ -201,7 +201,8 @@ def verify_dog_image(image_data: str) -> bool:
     
     try:
         print(f'Starting dog verification for image (length: {len(image_data)})')
-        print(f'Using API key: {api_key[:10]}...')
+        print(f'Using API key (first 20 chars): {api_key[:20]}...')
+        print(f'API key starts with "eyJ": {api_key.startswith("eyJ")}')
         
         response = requests.post(
             'https://bothub.chat/api/v2/openai/v1/chat/completions',

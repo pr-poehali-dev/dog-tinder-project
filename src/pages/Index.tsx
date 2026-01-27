@@ -669,7 +669,29 @@ export default function Index() {
             Фильтры
           </Button>
           
-
+          <div className="flex items-center gap-2">
+            {!user && (
+              <>
+                <TelegramLoginButton
+                  botUsername={import.meta.env.VITE_TELEGRAM_BOT_USERNAME}
+                  onSuccess={(tgUser, token) => {
+                    setUser(tgUser);
+                    loadMyPet(tgUser.id);
+                    loadMyLikes(tgUser.id);
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAuthForm(true)}
+                  className="gap-2"
+                >
+                  <Icon name="Mail" className="w-4 h-4" />
+                  Войти через Email
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         {isLoading ? (
           <div className="text-center py-20">
@@ -817,6 +839,17 @@ export default function Index() {
             </Button>
           </div>
         </div>
+      )}
+      {showAuthForm && (
+        <AuthForm
+          onSuccess={(user, token) => {
+            setUser(user);
+            setShowAuthForm(false);
+            loadMyPet(user.id);
+            loadMyLikes(user.id);
+          }}
+          onClose={() => setShowAuthForm(false)}
+        />
       )}
     </div>
   );

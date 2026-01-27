@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import boto3
 
-# Force redeploy to update POLZA_AI_API_KEY secret
+# Force redeploy: Updated POLZA_AI_API_KEY to new BotHub JWT token (Jan 27, 2026)
 import base64
 import uuid
 import requests

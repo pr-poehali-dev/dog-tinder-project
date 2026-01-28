@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS request (CORS preflight)",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 204
+    },
+    {
+      "name": "Test email send",
+      "method": "POST",
+      "path": "/?action=test",
+      "body": {
+        "to_email": "test@example.com"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

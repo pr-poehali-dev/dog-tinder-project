@@ -232,6 +232,18 @@ def handle_test(body: dict) -> dict:
     if "@" not in to_email:
         return cors_response(400, {"error": "Invalid email format"})
 
+    # Check configuration
+    try:
+        api_key = get_api_key()
+        sender_email = get_sender_email()
+        sender_name = get_sender_name()
+        print(f"[DEBUG] API Key exists: {bool(api_key)}")
+        print(f"[DEBUG] Sender email: {sender_email}")
+        print(f"[DEBUG] Sender name: {sender_name}")
+    except ValueError as e:
+        print(f"[ERROR] Configuration error: {e}")
+        return cors_response(400, {"error": str(e), "hint": "Please configure UNISENDER_API_KEY, UNISENDER_SENDER_EMAIL, UNISENDER_SENDER_NAME secrets"})
+
     result = send_email(
         to_email=to_email,
         subject="Тестовое письмо от Unisender Go",
@@ -326,19 +338,36 @@ def handle_send_template(body: dict) -> dict:
 def handler(event: dict, context) -> dict:
     """Main entry point."""
     method = event.get("httpMethod", "GET")
+    
+    print(f"[DEBUG] Method: {method}")
+    print(f"[DEBUG] Event: {json.dumps(event)}")
 
     if method == "OPTIONS":
         return options_response()
 
     params = event.get("queryStringParameters") or {}
     action = params.get("action", "")
+    
+    print(f"[DEBUG] Action: {action}")
 
     body = {}
     if method == "POST":
         raw_body = event.get("body", "{}")
+        
+        print(f"[DEBUG] Raw body: {raw_body[:200]}")
+        print(f"[DEBUG] isBase64Encoded: {event.get('isBase64Encoded', False)}")
+        
+        # Handle base64 encoded body
+        if event.get("isBase64Encoded", False):
+            import base64
+            raw_body = base64.b64decode(raw_body).decode('utf-8')
+            print(f"[DEBUG] Decoded body: {raw_body[:200]}")
+        
         try:
             body = json.loads(raw_body) if raw_body else {}
-        except json.JSONDecodeError:
+            print(f"[DEBUG] Parsed body: {body}")
+        except json.JSONDecodeError as e:
+            print(f"[ERROR] JSON decode error: {e}")
             return cors_response(400, {"error": "Invalid JSON"})
 
     if action == "send" and method == "POST":
@@ -348,4 +377,5 @@ def handler(event: dict, context) -> dict:
     elif action == "test" and method == "POST":
         return handle_test(body)
     else:
+        print(f"[ERROR] Unknown action: {action}, method: {method}")
         return cors_response(400, {"error": f"Unknown action: {action}"})

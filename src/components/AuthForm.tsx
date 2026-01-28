@@ -124,36 +124,6 @@ export default function AuthForm({ onSuccess, onClose }: AuthFormProps) {
             {isLoading ? 'Загрузка...' : (isLogin ? 'Войти' : 'Зарегистрироваться')}
           </Button>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">или продолжить с</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <a
-              href="https://functions.poehali.dev/c89c74f6-84a8-46e5-af84-c6da33670f50?action=auth"
-              className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <Icon name="Send" size={20} className="mr-2 text-[#0088cc]" />
-              <span className="text-sm font-medium">Telegram</span>
-            </a>
-            
-            <a
-              href="https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6?action=auth"
-              className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z" fill="#FC3F1D"/>
-                <path d="M12 5.5C8.41 5.5 5.5 8.41 5.5 12S8.41 18.5 12 18.5 18.5 15.59 18.5 12 15.59 5.5 12 5.5zm0 11c-2.481 0-4.5-2.019-4.5-4.5S9.519 7.5 12 7.5s4.5 2.019 4.5 4.5-2.019 4.5-4.5 4.5z" fill="#FC3F1D"/>
-              </svg>
-              <span className="text-sm font-medium">Яндекс</span>
-            </a>
-          </div>
-
           <div className="text-center mt-4">
             <button
               type="button"

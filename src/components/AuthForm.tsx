@@ -124,37 +124,6 @@ export default function AuthForm({ onSuccess, onClose }: AuthFormProps) {
             {isLoading ? 'Загрузка...' : (isLogin ? 'Войти' : 'Зарегистрироваться')}
           </Button>
 
-          {isLogin && (
-            <>
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">или</span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <a
-                  href="https://functions.poehali.dev/5a15f2f9-f3e5-4802-b74b-c84bd3da3c9f?action=login"
-                  className="flex items-center justify-center w-full px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <Icon name="Mail" size={20} className="mr-2" />
-                  Войти через Email-код
-                </a>
-                
-                <a
-                  href="https://functions.poehali.dev/5a8c49eb-6c18-4401-9abe-03f4f1eb9b41?action=auth"
-                  className="flex items-center justify-center w-full px-4 py-3 bg-[#0088cc] text-white rounded-lg hover:bg-[#006699] transition-colors"
-                >
-                  <Icon name="Send" size={20} className="mr-2" />
-                  Войти через Telegram
-                </a>
-              </div>
-            </>
-          )}
-
           <div className="text-center mt-4">
             <button
               type="button"

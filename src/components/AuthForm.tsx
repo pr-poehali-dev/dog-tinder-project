@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
 const AUTH_API_URL = 'https://functions.poehali.dev/1a398d28-e1ae-4c80-9ea4-195ae0eafaf2';
+const TELEGRAM_AUTH_URL = 'https://functions.poehali.dev/c89c74f6-84a8-46e5-af84-c6da33670f50?action=auth';
+const YANDEX_AUTH_URL = 'https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6?action=auth';
 
 interface AuthFormProps {
   onSuccess: (user: any, token: string) => void;
@@ -10,6 +12,7 @@ interface AuthFormProps {
 }
 
 export default function AuthForm({ onSuccess, onClose }: AuthFormProps) {
+  const [step, setStep] = useState<'choice' | 'email'>('choice');
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -59,10 +62,84 @@ export default function AuthForm({ onSuccess, onClose }: AuthFormProps) {
     }
   };
 
+  // Шаг 1: Выбор входа или регистрации
+  if (step === 'choice') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">
+              Добро пожаловать
+            </h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <Icon name="X" size={24} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-gray-600 text-center mb-6">
+              Выберите способ {isLogin ? 'входа' : 'регистрации'}
+            </p>
+
+            {/* Email */}
+            <button
+              onClick={() => setStep('email')}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 border-2 border-gray-200 rounded-xl hover:border-pink-400 hover:bg-pink-50 transition-all"
+            >
+              <Icon name="Mail" size={24} className="text-pink-600" />
+              <span className="font-medium text-gray-800">Email и пароль</span>
+            </button>
+
+            {/* Telegram */}
+            <a
+              href={TELEGRAM_AUTH_URL}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 border-2 border-gray-200 rounded-xl hover:border-[#0088cc] hover:bg-blue-50 transition-all"
+            >
+              <Icon name="Send" size={24} className="text-[#0088cc]" />
+              <span className="font-medium text-gray-800">Telegram</span>
+            </a>
+
+            {/* Яндекс */}
+            <a
+              href={YANDEX_AUTH_URL}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 border-2 border-gray-200 rounded-xl hover:border-red-400 hover:bg-red-50 transition-all"
+            >
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z" fill="#FC3F1D"/>
+                <path d="M12 5.5C8.41 5.5 5.5 8.41 5.5 12S8.41 18.5 12 18.5 18.5 15.59 18.5 12 15.59 5.5 12 5.5zm0 11c-2.481 0-4.5-2.019-4.5-4.5S9.519 7.5 12 7.5s4.5 2.019 4.5 4.5-2.019 4.5-4.5 4.5z" fill="#FC3F1D"/>
+              </svg>
+              <span className="font-medium text-gray-800">Яндекс ID</span>
+            </a>
+          </div>
+
+          <div className="text-center mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError('');
+              }}
+              className="text-pink-600 hover:text-pink-700 font-medium"
+            >
+              {isLogin ? 'Нет аккаунта? Зарегистрируйтесь' : 'Уже есть аккаунт? Войдите'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Шаг 2: Форма email/пароль
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => setStep('choice')}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <Icon name="ArrowLeft" size={24} />
+          </button>
           <h2 className="text-2xl font-bold text-gray-800">
             {isLogin ? 'Вход' : 'Регистрация'}
           </h2>

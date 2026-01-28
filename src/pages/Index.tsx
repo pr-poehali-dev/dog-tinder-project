@@ -309,7 +309,13 @@ export default function Index() {
               <Button variant="ghost" onClick={() => (window.location.href = '/chatgpt')} title="Поддержка">
                 <Icon name="Headphones" size={24} />
               </Button>
-              <Button variant="ghost" onClick={() => (window.location.href = '/profile')}>
+              <Button variant="ghost" onClick={() => {
+                if (!user) {
+                  setShowAuthForm(true);
+                } else {
+                  window.location.href = '/profile';
+                }
+              }}>
                 <Icon name="User" size={24} />
               </Button>
             </div>

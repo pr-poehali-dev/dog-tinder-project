@@ -1,13 +1,13 @@
-'''API для email-аутентификации с обязательным выбором username'''
+'''API для email-аутентификации: вход по коду или паролю с выбором username'''
+
 import json
 import os
 import random
 import string
 import time
+import hashlib
 import psycopg2
 from psycopg2.extras import RealDictCursor
-
-# Используем простой протокол SQL (без параметризации) для совместимости с DATABASE_URL
 
 def handler(event: dict, context) -> dict:
     method = event.get('httpMethod', 'POST')
@@ -37,6 +37,10 @@ def handler(event: dict, context) -> dict:
             return generate_unique_username(body)
         elif action == 'set_username':
             return set_username(body)
+        elif action == 'register':
+            return register_with_password(body)
+        elif action == 'login':
+            return login_with_password(body)
         else:
             return {
                 'statusCode': 400,
@@ -108,25 +112,31 @@ def verify_code_and_register(body: dict) -> dict:
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
+        username_escaped = username.replace("'", "''")
         cur.execute(
-            f"SELECT id, email, username FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER('{username.replace("'", "''")}')"
+            f"SELECT id, email, username FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER('{username_escaped}')"
         )
         existing_username = cur.fetchone()
         
         if existing_username:
+            cur.close()
+            conn.close()
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({'error': 'Username уже занят'})
             }
         
+        email_escaped = email.replace("'", "''")
         cur.execute(
-            f"SELECT id, email, username FROM t_p11971418_dog_tinder_project.users WHERE email = '{email.replace("'", "'')}'"
+            f"SELECT id, email, username FROM t_p11971418_dog_tinder_project.users WHERE email = '{email_escaped}'"
         )
         user = cur.fetchone()
         
         if user:
             if user['username']:
+                cur.close()
+                conn.close()
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -137,10 +147,12 @@ def verify_code_and_register(body: dict) -> dict:
                 }
             else:
                 cur.execute(
-                    f"UPDATE t_p11971418_dog_tinder_project.users SET username = '{username.replace("'", "''")}', username_updated_at = NOW(), email_verified = true WHERE id = {user['id']} RETURNING id, email, username, name, avatar_url, username_updated_at"
+                    f"UPDATE t_p11971418_dog_tinder_project.users SET username = '{username_escaped}', username_updated_at = NOW(), email_verified = true WHERE id = {user['id']} RETURNING id, email, username, name, avatar_url, username_updated_at"
                 )
                 updated_user = cur.fetchone()
                 conn.commit()
+                cur.close()
+                conn.close()
                 
                 user_dict = dict(updated_user)
                 if user_dict.get('username_updated_at'):
@@ -156,10 +168,12 @@ def verify_code_and_register(body: dict) -> dict:
                 }
         else:
             cur.execute(
-                f"INSERT INTO t_p11971418_dog_tinder_project.users (email, username, email_verified, username_updated_at) VALUES ('{email.replace("'", "''")}', '{username.replace("'", "''")}', true, NOW()) RETURNING id, email, username, name, avatar_url, username_updated_at"
+                f"INSERT INTO t_p11971418_dog_tinder_project.users (email, username, email_verified, username_updated_at) VALUES ('{email_escaped}', '{username_escaped}', true, NOW()) RETURNING id, email, username, name, avatar_url, username_updated_at"
             )
             new_user = cur.fetchone()
             conn.commit()
+            cur.close()
+            conn.close()
             
             user_dict = dict(new_user)
             if user_dict.get('username_updated_at'):
@@ -173,9 +187,10 @@ def verify_code_and_register(body: dict) -> dict:
                     'user': user_dict
                 })
             }
-    finally:
+    except Exception as e:
         cur.close()
         conn.close()
+        raise e
 
 def check_username_availability(body: dict) -> dict:
     username = body.get('username', '').strip()
@@ -199,8 +214,9 @@ def check_username_availability(body: dict) -> dict:
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
+        username_escaped = username.replace("'", "''")
         cur.execute(
-            f"SELECT id FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER('{username.replace("'", "''")}')"
+            f"SELECT id FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER('{username_escaped}')"
         )
         exists = cur.fetchone()
         
@@ -230,9 +246,10 @@ def generate_unique_username(body: dict) -> dict:
         for _ in range(10):
             suffix = ''.join(random.choices(string.digits, k=4))
             username = f"{base}{suffix}"
+            username_escaped = username.replace("'", "''")
             
             cur.execute(
-                f"SELECT id FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER('{username.replace("'", "''")}')"
+                f"SELECT id FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER('{username_escaped}')"
             )
             
             if not cur.fetchone():
@@ -252,7 +269,6 @@ def generate_unique_username(body: dict) -> dict:
         conn.close()
 
 def set_username(body: dict) -> dict:
-    '''Обновить username с проверкой 30-дневного ограничения'''
     user_id = body.get('user_id')
     new_username = body.get('username', '').strip().lower()
     
@@ -310,8 +326,9 @@ def set_username(body: dict) -> dict:
                     'body': json.dumps({'error': f'Изменить username можно через {days_remaining} дн.'})
                 }
         
+        new_username_escaped = new_username.replace("'", "''")
         cur.execute(
-            f"SELECT id FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER('{new_username.replace("'", "''")}') AND id != {user_id}"
+            f"SELECT id FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER('{new_username_escaped}') AND id != {user_id}"
         )
         
         if cur.fetchone():
@@ -322,7 +339,7 @@ def set_username(body: dict) -> dict:
             }
         
         cur.execute(
-            f"UPDATE t_p11971418_dog_tinder_project.users SET username = '{new_username.replace("'", "''")}', username_updated_at = NOW() WHERE id = {user_id} RETURNING id, email, username, name, avatar_url, username_updated_at"
+            f"UPDATE t_p11971418_dog_tinder_project.users SET username = '{new_username_escaped}', username_updated_at = NOW() WHERE id = {user_id} RETURNING id, email, username, name, avatar_url, username_updated_at"
         )
         updated_user = cur.fetchone()
         conn.commit()
@@ -334,7 +351,125 @@ def set_username(body: dict) -> dict:
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'user': user_dict})
+            'body': json.dumps({
+                'success': True,
+                'user': user_dict
+            })
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def register_with_password(body: dict) -> dict:
+    email = body.get('email', '').strip().lower()
+    password = body.get('password', '').strip()
+    username = body.get('username', '').strip()
+    
+    if not email or not password or not username:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Email, пароль и username обязательны'})
+        }
+    
+    if len(password) < 6:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Пароль должен быть минимум 6 символов'})
+        }
+    
+    dsn = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(dsn)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        email_escaped = email.replace("'", "''")
+        cur.execute(
+            f"SELECT id FROM t_p11971418_dog_tinder_project.users WHERE email = '{email_escaped}'"
+        )
+        existing_user = cur.fetchone()
+        
+        if existing_user:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Пользователь уже существует'})
+            }
+        
+        username_escaped = username.replace("'", "''")
+        cur.execute(
+            f"SELECT id FROM t_p11971418_dog_tinder_project.users WHERE LOWER(username) = LOWER('{username_escaped}')"
+        )
+        existing_username = cur.fetchone()
+        
+        if existing_username:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Username уже занят'})
+            }
+        
+        password_hash = hash_password(password)
+        cur.execute(
+            f"INSERT INTO t_p11971418_dog_tinder_project.users (email, username, password_hash, email_verified, username_updated_at) VALUES ('{email_escaped}', '{username_escaped}', '{password_hash}', true, NOW()) RETURNING id, email, username, name, avatar_url"
+        )
+        new_user = cur.fetchone()
+        conn.commit()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({
+                'success': True,
+                'authenticated': True,
+                'user': dict(new_user)
+            })
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+def login_with_password(body: dict) -> dict:
+    email = body.get('email', '').strip().lower()
+    password = body.get('password', '').strip()
+    
+    if not email or not password:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Email и пароль обязательны'})
+        }
+    
+    dsn = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(dsn)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        password_hash = hash_password(password)
+        email_escaped = email.replace("'", "''")
+        cur.execute(
+            f"SELECT id, email, username, name, avatar_url FROM t_p11971418_dog_tinder_project.users WHERE email = '{email_escaped}' AND password_hash = '{password_hash}'"
+        )
+        user = cur.fetchone()
+        
+        if not user:
+            return {
+                'statusCode': 401,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Неверный email или пароль'})
+            }
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({
+                'authenticated': True,
+                'user': dict(user)
+            })
         }
     finally:
         cur.close()

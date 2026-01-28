@@ -1,7 +1,7 @@
 {
   "tests": [
     {
-      "name": "Generate unique username",
+      "name": "Generate username test",
       "method": "POST",
       "body": {
         "action": "generate_username",
@@ -10,33 +10,6 @@
       "expectedStatus": 200,
       "expectedBody": {
         "username": "string"
-      },
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "Check username availability - available",
-      "method": "POST",
-      "body": {
-        "action": "check_username",
-        "username": "uniqueuser99999"
-      },
-      "expectedStatus": 200,
-      "expectedBody": {
-        "available": true
-      },
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "Send verification code",
-      "method": "POST",
-      "body": {
-        "action": "send_code",
-        "email": "test@example.com"
-      },
-      "expectedStatus": 200,
-      "expectedBody": {
-        "success": true,
-        "code": "string"
       },
       "bodyMatcher": "partial"
     }

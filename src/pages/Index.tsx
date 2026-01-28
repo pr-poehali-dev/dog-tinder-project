@@ -55,6 +55,8 @@ export default function Index() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showAuthForm, setShowAuthForm] = useState(false);
   const { counts } = useNotifications(user?.id || null);
+  
+  // Auth handlers
 
   useEffect(() => {
     const currentUser = getCurrentUser();

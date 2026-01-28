@@ -7,8 +7,6 @@ import time
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Используем простой протокол SQL (без параметризации) для совместимости с DATABASE_URL
-
 def handler(event: dict, context) -> dict:
     method = event.get('httpMethod', 'POST')
     
@@ -252,7 +250,6 @@ def generate_unique_username(body: dict) -> dict:
         conn.close()
 
 def set_username(body: dict) -> dict:
-    '''Обновить username с проверкой 30-дневного ограничения'''
     user_id = body.get('user_id')
     new_username = body.get('username', '').strip().lower()
     
@@ -334,7 +331,10 @@ def set_username(body: dict) -> dict:
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'user': user_dict})
+            'body': json.dumps({
+                'success': True,
+                'user': user_dict
+            })
         }
     finally:
         cur.close()

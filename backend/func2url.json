@@ -1,8 +1,8 @@
 {
+  "unisender-go-unisender": "https://functions.poehali.dev/d43baef4-2c55-4d05-ae1a-d6371dd06fe1",
   "auth-password": "https://functions.poehali.dev/1a398d28-e1ae-4c80-9ea4-195ae0eafaf2",
   "profile": "https://functions.poehali.dev/b2989243-6e4e-472c-9f80-2ae9d50a3a79",
   "breeding": "https://functions.poehali.dev/9e55c198-d835-49ca-a996-fcdab68dad27",
-  "auth": "https://functions.poehali.dev/1a7a39de-f267-44a5-aaf6-04b5c3610d87",
   "telegram-bot-telegram-auth": "https://functions.poehali.dev/c89c74f6-84a8-46e5-af84-c6da33670f50",
   "telegram-bot-telegram-bot": "https://functions.poehali.dev/1f6dc1fe-9255-4d9b-b8f2-28e6397fd626",
   "chatgpt": "https://functions.poehali.dev/c88bcdc8-6a9a-4d02-900e-980d8f345323",

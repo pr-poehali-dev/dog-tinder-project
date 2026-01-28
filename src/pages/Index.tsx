@@ -6,7 +6,6 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { requestNotificationPermission } from '@/utils/notifications';
 import SwipeCard from '@/components/SwipeCard';
 import confetti from 'canvas-confetti';
-import TelegramLoginButton from '@/components/extensions/telegram-bot/TelegramLoginButton';
 import AuthForm from '@/components/AuthForm';
 import { getCurrentUser, logout } from '@/lib/auth';
 

@@ -670,25 +670,15 @@ export default function Index() {
           
           <div className="flex items-center gap-2">
             {!user && (
-              <>
-                <TelegramLoginButton
-                  botUsername={import.meta.env.VITE_TELEGRAM_BOT_USERNAME}
-                  onSuccess={(tgUser, token) => {
-                    setUser(tgUser);
-                    loadMyPet(tgUser.id);
-                    loadMyLikes(tgUser.id);
-                  }}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowAuthForm(true)}
-                  className="gap-2"
-                >
-                  <Icon name="Mail" className="w-4 h-4" />
-                  Войти через Email
-                </Button>
-              </>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAuthForm(true)}
+                className="gap-2"
+              >
+                <Icon name="LogIn" className="w-4 h-4" />
+                Войти
+              </Button>
             )}
           </div>
         </div>

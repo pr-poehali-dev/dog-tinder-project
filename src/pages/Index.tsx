@@ -6,7 +6,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { requestNotificationPermission } from '@/utils/notifications';
 import SwipeCard from '@/components/SwipeCard';
 import confetti from 'canvas-confetti';
-import AuthForm from '@/components/AuthForm';
+import EmailAuth from '@/components/EmailAuth';
 import { getCurrentUser, logout } from '@/lib/auth';
 
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
@@ -836,15 +836,28 @@ export default function Index() {
         </div>
       )}
       {showAuthForm && (
-        <AuthForm
-          onSuccess={(user, token) => {
-            setUser(user);
-            setShowAuthForm(false);
-            loadMyPet(user.id);
-            loadMyLikes(user.id);
-          }}
-          onClose={() => setShowAuthForm(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="relative">
+            <button
+              onClick={() => setShowAuthForm(false)}
+              className="absolute -top-4 -right-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 z-10"
+            >
+              <Icon name="X" size={20} className="text-gray-600" />
+            </button>
+            <EmailAuth
+              onSuccess={(email) => {
+                const savedUser = localStorage.getItem('user');
+                if (savedUser) {
+                  const userData = JSON.parse(savedUser);
+                  setUser(userData);
+                  loadMyPet(userData.id);
+                  loadMyLikes(userData.id);
+                }
+                setShowAuthForm(false);
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

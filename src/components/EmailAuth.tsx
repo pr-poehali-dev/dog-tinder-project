@@ -11,12 +11,18 @@ interface EmailAuthProps {
 export default function EmailAuth({ onSuccess }: EmailAuthProps) {
   const [authMode, setAuthMode] = useState<'code' | 'password' | 'forgot'>('code');
   const [step, setStep] = useState<'email' | 'code' | 'username'>('email');
+  const [forgotStep, setForgotStep] = useState<'email' | 'code' | 'password'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [forgotCode, setForgotCode] = useState('');
   const [username, setUsername] = useState('');
   const [suggestedUsername, setSuggestedUsername] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [verificationData, setVerificationData] = useState<{
+    code: string;
+    expires_at: number;
+  } | null>(null);
+  const [forgotVerificationData, setForgotVerificationData] = useState<{
     code: string;
     expires_at: number;
   } | null>(null);
@@ -216,15 +222,47 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
           Восстановление пароля
         </h2>
         <p className="text-gray-600 mb-6">
-          {step === 'email' 
+          {forgotStep === 'email' 
             ? 'Введите email для восстановления доступа' 
-            : step === 'code'
+            : forgotStep === 'code'
             ? 'Введите код из письма'
             : 'Придумайте новый пароль'}
         </p>
 
-        {step === 'email' && (
-          <form onSubmit={handleSendCode} className="space-y-4">
+        {forgotStep === 'email' && (
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setError('');
+            setIsLoading(true);
+
+            try {
+              const response = await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'send_code',
+                  email: email.trim().toLowerCase(),
+                }),
+              });
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                throw new Error(data.error || 'Ошибка отправки кода');
+              }
+
+              setForgotVerificationData({
+                code: data.code,
+                expires_at: data.expires_at,
+              });
+              
+              setForgotStep('code');
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Ошибка отправки');
+            } finally {
+              setIsLoading(false);
+            }
+          }} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email
@@ -256,16 +294,36 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
           </form>
         )}
 
-        {step === 'code' && (
-          <form onSubmit={handleVerifyCode} className="space-y-4">
+        {forgotStep === 'code' && (
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            setError('');
+
+            if (forgotCode.length !== 6) {
+              setError('Введите 6-значный код');
+              return;
+            }
+
+            if (!forgotVerificationData) {
+              setError('Нет данных для проверки');
+              return;
+            }
+
+            if (forgotCode.trim() !== forgotVerificationData.code) {
+              setError('Неверный код');
+              return;
+            }
+
+            setForgotStep('password');
+          }} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Код из письма
               </label>
               <input
                 type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
+                value={forgotCode}
+                onChange={(e) => setForgotCode(e.target.value)}
                 placeholder="123456"
                 maxLength={6}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center text-2xl tracking-widest font-bold"
@@ -293,8 +351,8 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
             <button
               type="button"
               onClick={() => {
-                setStep('email');
-                setCode('');
+                setForgotStep('email');
+                setForgotCode('');
                 setError('');
               }}
               className="w-full text-sm text-gray-600 hover:text-pink-600"
@@ -304,13 +362,13 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
           </form>
         )}
 
-        {step === 'username' && (
+        {forgotStep === 'password' && (
           <form onSubmit={async (e) => {
             e.preventDefault();
             setError('');
             setIsLoading(true);
 
-            if (!verificationData) {
+            if (!forgotVerificationData) {
               setError('Нет данных для проверки');
               setIsLoading(false);
               return;
@@ -323,9 +381,9 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
                 body: JSON.stringify({
                   action: 'reset_password',
                   email: email.trim().toLowerCase(),
-                  code: code.trim(),
-                  expected_code: verificationData.code,
-                  expires_at: verificationData.expires_at,
+                  code: forgotCode.trim(),
+                  expected_code: forgotVerificationData.code,
+                  expires_at: forgotVerificationData.expires_at,
                   password: (e.target as HTMLFormElement).newPassword.value,
                 }),
               });

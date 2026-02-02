@@ -8,6 +8,7 @@ import time
 import hashlib
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import requests
 
 def handler(event: dict, context) -> dict:
     method = event.get('httpMethod', 'POST')
@@ -67,7 +68,49 @@ def send_verification_code(body: dict) -> dict:
     code = ''.join(random.choices(string.digits, k=6))
     expires_at = int(time.time()) + 600
     
-    print(f'Verification code for {email}: {code}')
+    unisender_url = 'https://functions.poehali.dev/d43baef4-2c55-4d05-ae1a-d6371dd06fe1'
+    sender_name = os.environ.get('UNISENDER_SENDER_NAME', 'TinDog')
+    site_url = os.environ.get('SITE_URL', 'https://tindog.ru')
+    
+    html_body = f'''
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #333;">Код подтверждения</h1>
+        <p>Ваш код для входа на {site_url}:</p>
+        <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+            {code}
+        </div>
+        <p style="color: #666;">Код действителен 10 минут.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 30px;">Если вы не запрашивали этот код, просто проигнорируйте это письмо.</p>
+    </div>
+    '''
+    
+    try:
+        response = requests.post(
+            unisender_url,
+            json={
+                'action': 'send',
+                'to_email': email,
+                'subject': f'Код подтверждения {code}',
+                'body_html': html_body,
+                'tags': ['auth', 'verification']
+            },
+            timeout=10
+        )
+        
+        if response.status_code != 200:
+            print(f'Failed to send email via Unisender: {response.text}')
+            return {
+                'statusCode': 500,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Не удалось отправить email'})
+            }
+    except Exception as e:
+        print(f'Error sending email: {str(e)}')
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Ошибка отправки email'})
+        }
     
     return {
         'statusCode': 200,

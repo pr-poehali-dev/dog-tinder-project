@@ -9,7 +9,7 @@ interface EmailAuthProps {
 }
 
 export default function EmailAuth({ onSuccess }: EmailAuthProps) {
-  const [authMode, setAuthMode] = useState<'code' | 'password'>('code');
+  const [authMode, setAuthMode] = useState<'code' | 'password' | 'forgot'>('code');
   const [step, setStep] = useState<'email' | 'code' | 'username'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -201,6 +201,185 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
     }
   };
 
+  if (authMode === 'forgot') {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg p-8">
+        <button
+          onClick={() => setAuthMode('password')}
+          className="flex items-center gap-2 text-gray-600 hover:text-pink-600 mb-6"
+        >
+          <Icon name="ArrowLeft" size={20} />
+          Назад к входу
+        </button>
+
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          Восстановление пароля
+        </h2>
+        <p className="text-gray-600 mb-6">
+          {step === 'email' 
+            ? 'Введите email для восстановления доступа' 
+            : step === 'code'
+            ? 'Введите код из письма'
+            : 'Придумайте новый пароль'}
+        </p>
+
+        {step === 'email' && (
+          <form onSubmit={handleSendCode} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                <Icon name="AlertCircle" size={16} />
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+            >
+              {isLoading ? 'Отправка...' : 'Отправить код'}
+            </Button>
+          </form>
+        )}
+
+        {step === 'code' && (
+          <form onSubmit={handleVerifyCode} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Код из письма
+              </label>
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="123456"
+                maxLength={6}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-center text-2xl tracking-widest font-bold"
+                required
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                Код отправлен на {email}
+              </p>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                <Icon name="AlertCircle" size={16} />
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+            >
+              Подтвердить код
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setStep('email');
+                setCode('');
+                setError('');
+              }}
+              className="w-full text-sm text-gray-600 hover:text-pink-600"
+            >
+              Отправить код повторно
+            </button>
+          </form>
+        )}
+
+        {step === 'username' && (
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setError('');
+            setIsLoading(true);
+
+            if (!verificationData) {
+              setError('Нет данных для проверки');
+              setIsLoading(false);
+              return;
+            }
+
+            try {
+              const response = await fetch(AUTH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'reset_password',
+                  email: email.trim().toLowerCase(),
+                  code: code.trim(),
+                  expected_code: verificationData.code,
+                  expires_at: verificationData.expires_at,
+                  password: (e.target as HTMLFormElement).newPassword.value,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                throw new Error(data.error || 'Ошибка сброса пароля');
+              }
+
+              if (data.success && data.user) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                onSuccess(email);
+              }
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Ошибка сброса пароля');
+            } finally {
+              setIsLoading(false);
+            }
+          }} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Новый пароль
+              </label>
+              <input
+                type="password"
+                name="newPassword"
+                placeholder="Минимум 6 символов"
+                minLength={6}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                <Icon name="AlertCircle" size={16} />
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+            >
+              {isLoading ? 'Сохранение...' : 'Сохранить пароль'}
+            </Button>
+          </form>
+        )}
+      </div>
+    );
+  }
+
   if (authMode === 'password') {
     return (
       <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -252,9 +431,20 @@ export default function EmailAuth({ onSuccess }: EmailAuthProps) {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Пароль
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Пароль
+              </label>
+              {username === '' && (
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('forgot')}
+                  className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+                >
+                  Забыли пароль?
+                </button>
+              )}
+            </div>
             <input
               type="password"
               value={code}

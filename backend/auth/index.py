@@ -42,6 +42,8 @@ def handler(event: dict, context) -> dict:
             return register_with_password(body)
         elif action == 'login':
             return login_with_password(body)
+        elif action == 'reset_password':
+            return reset_password(body)
         else:
             return {
                 'statusCode': 400,
@@ -512,6 +514,79 @@ def login_with_password(body: dict) -> dict:
             'body': json.dumps({
                 'authenticated': True,
                 'user': dict(user)
+            })
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+def reset_password(body: dict) -> dict:
+    email = body.get('email', '').strip().lower()
+    code = body.get('code', '').strip()
+    expected_code = body.get('expected_code', '')
+    expires_at = body.get('expires_at', 0)
+    new_password = body.get('password', '').strip()
+    
+    if not email or not code or not new_password:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Email, код и новый пароль обязательны'})
+        }
+    
+    if len(new_password) < 6:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Пароль должен быть минимум 6 символов'})
+        }
+    
+    if int(time.time()) > expires_at:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Код истёк'})
+        }
+    
+    if code != expected_code:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Неверный код'})
+        }
+    
+    dsn = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(dsn)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        email_escaped = email.replace("'", "''")
+        cur.execute(
+            f"SELECT id, email, username FROM t_p11971418_dog_tinder_project.users WHERE email = '{email_escaped}'"
+        )
+        user = cur.fetchone()
+        
+        if not user:
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Пользователь не найден'})
+            }
+        
+        password_hash = hash_password(new_password)
+        cur.execute(
+            f"UPDATE t_p11971418_dog_tinder_project.users SET password_hash = '{password_hash}' WHERE id = {user['id']} RETURNING id, email, username, name, avatar_url"
+        )
+        updated_user = cur.fetchone()
+        conn.commit()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({
+                'success': True,
+                'authenticated': True,
+                'user': dict(updated_user)
             })
         }
     finally:

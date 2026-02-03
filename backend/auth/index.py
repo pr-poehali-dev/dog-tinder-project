@@ -88,9 +88,8 @@ def send_verification_code(body: dict) -> dict:
     
     try:
         response = requests.post(
-            unisender_url,
+            f'{unisender_url}?action=send',
             json={
-                'action': 'send',
                 'to_email': email,
                 'subject': f'Код подтверждения {code}',
                 'body_html': html_body,

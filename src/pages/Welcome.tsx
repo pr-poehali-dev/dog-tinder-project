@@ -33,7 +33,10 @@ export default function Welcome() {
           </Button>
 
           <Button
-            onClick={() => navigate('/')}
+            onClick={() => {
+              localStorage.setItem('onboardingComplete', 'true');
+              navigate('/');
+            }}
             variant="outline"
             className="w-full h-14 text-lg rounded-full"
           >

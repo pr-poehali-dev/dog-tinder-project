@@ -3,12 +3,12 @@ import Icon from '@/components/ui/icon';
 import { useNotifications } from '@/hooks/useNotifications';
 import { requestNotificationPermission } from '@/utils/notifications';
 import confetti from 'canvas-confetti';
-import EmailAuth from '@/components/EmailAuth';
 import { getCurrentUser } from '@/lib/auth';
 import Header from './Index/Header';
 import FiltersPanel from './Index/FiltersPanel';
 import SwipeView from './Index/SwipeView';
 import InstructionsModal from './Index/InstructionsModal';
+import AuthModal from '@/components/AuthModal';
 
 const PETS_API_URL = 'https://functions.poehali.dev/2a5a65c0-df1b-4023-980c-b0601b7c462c';
 const LIKES_API_URL = 'https://functions.poehali.dev/4e6641e2-0060-48bf-8259-7b7f08c84498';
@@ -54,7 +54,7 @@ export default function Index() {
   const [viewMode, setViewMode] = useState<'grid' | 'swipe'>('swipe');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showInstructions, setShowInstructions] = useState(false);
-  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { counts } = useNotifications(user?.id || null);
 
   useEffect(() => {
@@ -103,7 +103,7 @@ export default function Index() {
     try {
       const response = await fetch(`${LIKES_API_URL}?action=outgoing&user_id=${userId}`);
       const data = await response.json();
-      const likedIds = new Set(data.map((like: any) => like.to_pet_id));
+      const likedIds = new Set(data.map((like: { to_pet_id: number }) => like.to_pet_id));
       setLikedPets(likedIds);
     } catch (error) {
       console.error('Failed to load likes:', error);
@@ -275,7 +275,7 @@ export default function Index() {
       <Header 
         user={user}
         counts={counts}
-        onLoginClick={() => setShowAuthForm(true)}
+        onLoginClick={() => setShowAuthModal(true)}
       />
 
       {showFilters && (
@@ -296,7 +296,7 @@ export default function Index() {
         onSwipeRight={handleSwipeRight}
         onRestart={() => setCurrentCardIndex(0)}
         onShowInstructions={() => setShowInstructions(true)}
-        onLoginClick={() => setShowAuthForm(true)}
+        onLoginClick={() => setShowAuthModal(true)}
         onToggleFilters={() => setShowFilters(!showFilters)}
       />
 
@@ -316,30 +316,19 @@ export default function Index() {
         <InstructionsModal onClose={() => setShowInstructions(false)} />
       )}
 
-      {showAuthForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="relative">
-            <button
-              onClick={() => setShowAuthForm(false)}
-              className="absolute -top-4 -right-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 z-10"
-            >
-              <Icon name="X" size={20} className="text-gray-600" />
-            </button>
-            <EmailAuth
-              onSuccess={(email) => {
-                const savedUser = localStorage.getItem('user');
-                if (savedUser) {
-                  const userData = JSON.parse(savedUser);
-                  setUser(userData);
-                  loadMyPet(userData.id);
-                  loadMyLikes(userData.id);
-                }
-                setShowAuthForm(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <AuthModal 
+        open={showAuthModal}
+        onOpenChange={setShowAuthModal}
+        onSuccess={() => {
+          const savedUser = localStorage.getItem('user');
+          if (savedUser) {
+            const userData = JSON.parse(savedUser);
+            setUser(userData);
+            loadMyPet(userData.id);
+            loadMyLikes(userData.id);
+          }
+        }}
+      />
     </div>
   );
 }

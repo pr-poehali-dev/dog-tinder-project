@@ -10,6 +10,7 @@ export default function Login() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -65,15 +66,36 @@ export default function Login() {
                   className="h-14 text-lg rounded-full"
                 />
                 <Button
-                  onClick={() => {
-                    if (resetEmail) {
-                      console.log('Отправка кода восстановления на:', resetEmail);
-                      setResetSent(true);
+                  onClick={async () => {
+                    if (!resetEmail) return;
+                    
+                    setIsSending(true);
+                    try {
+                      const response = await fetch('https://functions.poehali.dev/f52b5772-a3de-4498-b10d-74574f969e06', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email: resetEmail }),
+                      });
+
+                      const data = await response.json();
+
+                      if (response.ok && data.success) {
+                        setResetSent(true);
+                      } else {
+                        alert('Ошибка отправки: ' + (data.error || 'Неизвестная ошибка'));
+                      }
+                    } catch (error) {
+                      alert('Ошибка сети: ' + error);
+                    } finally {
+                      setIsSending(false);
                     }
                   }}
-                  className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full"
+                  disabled={isSending}
+                  className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full disabled:opacity-50"
                 >
-                  Отправить ссылку
+                  {isSending ? 'Отправка...' : 'Отправить ссылку'}
                 </Button>
                 <Button
                   onClick={() => {

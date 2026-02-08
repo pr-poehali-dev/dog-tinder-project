@@ -298,6 +298,14 @@ export default function Profile() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white py-12">
         <div className="container mx-auto px-4 max-w-2xl">
+          <Button
+            variant="ghost"
+            onClick={() => (window.location.href = '/feed')}
+            className="mb-4"
+          >
+            <Icon name="ArrowLeft" size={20} className="mr-2" />
+            На главную
+          </Button>
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <ProfileHeader
               user={user}

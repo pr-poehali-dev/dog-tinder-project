@@ -217,7 +217,7 @@ export default function Chats() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={() => (window.location.href = '/')}>
+              <Button variant="ghost" onClick={() => (window.location.href = '/feed')}>
                 <Icon name="Home" size={24} />
               </Button>
               <Button variant="ghost" onClick={() => (window.location.href = '/likes')}>

@@ -8,6 +8,8 @@ export default function Login() {
   const navigate = useNavigate();
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -52,7 +54,67 @@ export default function Login() {
           </h2>
         </div>
 
-        {!showEmailForm ? (
+        {showForgotPassword ? (
+          <div className="space-y-6">
+            {!resetSent ? (
+              <>
+                <p className="text-center text-gray-700">
+                  Введите email, указанный при регистрации
+                </p>
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="h-14 text-lg rounded-full"
+                />
+                <Button
+                  onClick={() => {
+                    if (resetEmail) {
+                      setResetSent(true);
+                    }
+                  }}
+                  className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full"
+                >
+                  Отправить ссылку
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setShowEmailForm(true);
+                  }}
+                  variant="outline"
+                  className="w-full h-14 text-lg rounded-full"
+                >
+                  Назад ко входу
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-center space-y-4 py-8">
+                  <Icon name="Mail" size={64} className="mx-auto text-pink-600" />
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Письмо отправлено!
+                  </h3>
+                  <p className="text-gray-600">
+                    Проверьте {resetEmail} и перейдите по ссылке для сброса пароля
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setResetSent(false);
+                    setResetEmail('');
+                    setShowEmailForm(true);
+                  }}
+                  className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full"
+                >
+                  Вернуться ко входу
+                </Button>
+              </>
+            )}
+          </div>
+        ) : !showEmailForm ? (
           <div className="space-y-4">
             <Button
               onClick={handleEmailLogin}
@@ -103,7 +165,10 @@ export default function Login() {
                 type="button"
                 variant="link"
                 className="text-pink-600 hover:text-pink-700"
-                onClick={() => setShowForgotPassword(true)}
+                onClick={() => {
+                  setShowForgotPassword(true);
+                  setShowEmailForm(false);
+                }}
               >
                 Забыли пароль?
               </Button>
@@ -136,37 +201,7 @@ export default function Login() {
         </div>
       </div>
 
-      {showForgotPassword && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full space-y-6">
-            <div className="text-center space-y-2">
-              <h3 className="text-xl font-bold text-gray-900">
-                Подтвердите действие<br />
-                на странице tindog.ru
-              </h3>
-              <p className="text-gray-600">
-                Функция восстановления пароля<br />
-                скоро будет доступна
-              </p>
-            </div>
-            <div className="space-y-3">
-              <Button
-                onClick={() => setShowForgotPassword(false)}
-                className="w-full h-12 text-lg bg-blue-500 hover:bg-blue-600 text-white rounded-2xl"
-              >
-                OK
-              </Button>
-              <Button
-                onClick={() => setShowForgotPassword(false)}
-                variant="ghost"
-                className="w-full h-12 text-lg text-blue-500 hover:text-blue-600"
-              >
-                Блокировать диалоговые окна
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

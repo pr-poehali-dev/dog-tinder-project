@@ -2,6 +2,8 @@ import json
 import os
 import random
 import smtplib
+import hashlib
+import psycopg2
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -50,7 +52,45 @@ def handler(event: dict, context) -> dict:
                 'body': json.dumps({'error': 'Email обязателен'})
             }
 
+        dsn = os.environ.get('DATABASE_URL')
+        schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
+        
+        conn = psycopg2.connect(dsn)
+        cur = conn.cursor()
+        
+        cur.execute(f"SELECT id FROM {schema}.users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'error': 'Пользователь с таким email не найден'})
+            }
+        
+        user_id = user[0]
         reset_code = str(random.randint(100000, 999999))
+        token_hash = hashlib.sha256(reset_code.encode()).hexdigest()
+        expires_at = datetime.now() + timedelta(minutes=15)
+        
+        cur.execute(
+            f"DELETE FROM {schema}.password_reset_tokens WHERE user_id = %s",
+            (user_id,)
+        )
+        
+        cur.execute(
+            f"INSERT INTO {schema}.password_reset_tokens (user_id, token_hash, expires_at) VALUES (%s, %s, %s)",
+            (user_id, token_hash, expires_at)
+        )
+        
+        conn.commit()
+        cur.close()
+        conn.close()
         
         smtp_host = os.environ.get('SMTP_HOST', 'smtp.yandex.ru')
         smtp_user = os.environ.get('SMTP_USER')
@@ -115,6 +155,15 @@ def handler(event: dict, context) -> dict:
             })
         }
 
+    except psycopg2.Error as e:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': f'Database error: {str(e)}'})
+        }
     except Exception as e:
         return {
             'statusCode': 500,

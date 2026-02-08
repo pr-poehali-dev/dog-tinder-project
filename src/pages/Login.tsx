@@ -195,7 +195,7 @@ export default function Login() {
                   )}
                 </div>
                 <Button
-                  onClick={() => {
+                  onClick={async () => {
                     if (newPassword.length < 6) {
                       alert('Пароль должен быть не менее 6 символов');
                       return;
@@ -204,21 +204,48 @@ export default function Login() {
                       alert('Пароли не совпадают');
                       return;
                     }
-                    alert('Пароль успешно изменён!');
-                    setShowForgotPassword(false);
-                    setResetSent(false);
-                    setShowCodeInput(false);
-                    setShowNewPassword(false);
-                    setResetEmail('');
-                    setResetCode('');
-                    setNewPassword('');
-                    setConfirmPassword('');
-                    setShowEmailForm(true);
+
+                    setIsSending(true);
+                    try {
+                      const response = await fetch('https://functions.poehali.dev/f736ea3e-b14a-4ad5-950a-0a363b8459c0', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          email: resetEmail,
+                          code: receivedCode,
+                          password: newPassword
+                        }),
+                      });
+
+                      const data = await response.json();
+
+                      if (response.ok && data.success) {
+                        alert('Пароль успешно изменён! Теперь можете войти с новым паролем');
+                        setShowForgotPassword(false);
+                        setResetSent(false);
+                        setShowCodeInput(false);
+                        setShowNewPassword(false);
+                        setResetEmail('');
+                        setResetCode('');
+                        setReceivedCode('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                        setShowEmailForm(true);
+                      } else {
+                        alert('Ошибка: ' + (data.error || 'Не удалось изменить пароль'));
+                      }
+                    } catch (error) {
+                      alert('Ошибка сети: ' + error);
+                    } finally {
+                      setIsSending(false);
+                    }
                   }}
-                  disabled={!newPassword || !confirmPassword || newPassword !== confirmPassword}
+                  disabled={!newPassword || !confirmPassword || newPassword !== confirmPassword || isSending}
                   className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full disabled:opacity-50"
                 >
-                  Сохранить пароль
+                  {isSending ? 'Сохранение...' : 'Сохранить пароль'}
                 </Button>
                 <Button
                   onClick={() => {

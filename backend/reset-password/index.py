@@ -132,19 +132,34 @@ def handler(event: dict, context) -> dict:
         </html>
         '''
         
-        api_data = {
-            'api_key': unisender_api_key,
-            'email': email,
-            'sender_name': 'TinDog',
-            'sender_email': unisender_sender_email,
-            'subject': 'Код восстановления пароля TinDog',
-            'body': html,
-            'list_id': '1'
+        payload = {
+            'message': {
+                'recipients': [
+                    {
+                        'email': email,
+                        'substitutions': {
+                            'code': reset_code
+                        }
+                    }
+                ],
+                'body': {
+                    'html': html
+                },
+                'subject': 'Код восстановления пароля TinDog',
+                'from_email': unisender_sender_email,
+                'from_name': 'TinDog',
+                'track_read': 0,
+                'track_links': 0
+            }
         }
         
         response = requests.post(
-            'https://api.unisender.com/ru/api/sendEmail',
-            data=api_data
+            'https://go1.unisender.ru/ru/transactional/api/v1/email/send.json',
+            headers={
+                'X-API-KEY': unisender_api_key,
+                'Content-Type': 'application/json'
+            },
+            json=payload
         )
         
         response_data = {}
@@ -153,15 +168,18 @@ def handler(event: dict, context) -> dict:
         except:
             pass
         
-        if response.status_code != 200 or (response_data and response_data.get('error')):
-            error_msg = response_data.get('message', response_data.get('error', response.text)) if response_data else response.text
+        if response.status_code != 200:
+            error_msg = str(response_data) if response_data else response.text
             return {
                 'statusCode': 500,
                 'headers': {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                'body': json.dumps({'error': f'Ошибка отправки email: {error_msg}'})
+                'body': json.dumps({
+                    'error': f'Ошибка отправки email: {error_msg}',
+                    'status_code': response.status_code
+                })
             }
 
         return {

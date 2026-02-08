@@ -6,11 +6,12 @@ export default function Welcome() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
     const onboardingComplete = localStorage.getItem('onboardingComplete');
-    if (onboardingComplete === 'true') {
-      navigate('/');
+    if (isAuthenticated === 'true' && onboardingComplete === 'true') {
+      navigate('/', { replace: true });
     }
-  }, [navigate]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-orange-50 p-6 flex flex-col items-center justify-between">

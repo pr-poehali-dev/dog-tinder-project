@@ -15,7 +15,7 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = () => {
+  const handleEmailLogin = () => {
     handleLogin();
   };
 
@@ -41,20 +41,18 @@ export default function Login() {
 
         <div className="space-y-4">
           <Button
-            onClick={handleGoogleLogin}
+            onClick={handleEmailLogin}
             className="w-full h-14 text-lg bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-200 rounded-full flex items-center justify-center gap-3"
           >
-            <Icon name="Chrome" size={24} />
-            Войти через Google
+            <Icon name="Mail" size={24} />
+            Войти через Email
           </Button>
 
           <Button
             onClick={handleYandexLogin}
-            className="w-full h-14 text-lg bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-200 rounded-full flex items-center justify-center gap-3"
+            className="w-full h-14 text-lg bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center gap-3"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>
-            </svg>
+            <span className="text-2xl font-bold">Я</span>
             Войти через Яндекс
           </Button>
 
@@ -62,7 +60,7 @@ export default function Login() {
             onClick={handleTelegramLogin}
             className="w-full h-14 text-lg bg-[#0088cc] hover:bg-[#006699] text-white rounded-full flex items-center justify-center gap-3"
           >
-            <Icon name="Send" size={24} />
+            <Icon name="MessageCircle" size={24} />
             Войти через Telegram
           </Button>
         </div>

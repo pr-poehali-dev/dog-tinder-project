@@ -5,16 +5,26 @@ import Icon from '@/components/ui/icon';
 export default function Login() {
   const navigate = useNavigate();
 
+  const handleLogin = () => {
+    localStorage.setItem('isAuthenticated', 'true');
+    const onboardingComplete = localStorage.getItem('onboardingComplete');
+    if (onboardingComplete === 'true') {
+      navigate('/');
+    } else {
+      navigate('/onboarding');
+    }
+  };
+
   const handleGoogleLogin = () => {
-    console.log('Google login');
+    handleLogin();
   };
 
   const handleYandexLogin = () => {
-    console.log('Yandex login');
+    handleLogin();
   };
 
   const handleTelegramLogin = () => {
-    console.log('Telegram login');
+    handleLogin();
   };
 
   return (

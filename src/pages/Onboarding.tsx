@@ -34,6 +34,7 @@ export default function Onboarding() {
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     } else {
+      localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('onboardingComplete', 'true');
       localStorage.setItem('userProfile', JSON.stringify(formData));
       toast({

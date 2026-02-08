@@ -11,6 +11,9 @@ export default function Login() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [receivedCode, setReceivedCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -82,7 +85,9 @@ export default function Login() {
                       const data = await response.json();
 
                       if (response.ok && data.success) {
+                        setReceivedCode(data.code);
                         setResetSent(true);
+                        setShowCodeInput(true);
                       } else {
                         alert('Ошибка отправки: ' + (data.error || 'Неизвестная ошибка'));
                       }
@@ -95,7 +100,7 @@ export default function Login() {
                   disabled={isSending}
                   className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full disabled:opacity-50"
                 >
-                  {isSending ? 'Отправка...' : 'Отправить ссылку'}
+                  {isSending ? 'Отправка...' : 'Отправить код'}
                 </Button>
                 <Button
                   onClick={() => {
@@ -108,30 +113,53 @@ export default function Login() {
                   Назад ко входу
                 </Button>
               </>
-            ) : (
+            ) : showCodeInput ? (
               <>
-                <div className="text-center space-y-4 py-8">
-                  <Icon name="Mail" size={64} className="mx-auto text-pink-600" />
+                <div className="text-center space-y-4 py-4">
+                  <Icon name="KeyRound" size={64} className="mx-auto text-pink-600" />
                   <h3 className="text-xl font-bold text-gray-900">
-                    Письмо отправлено!
+                    Код отправлен!
                   </h3>
                   <p className="text-gray-600">
-                    Проверьте {resetEmail} и перейдите по ссылке для сброса пароля
+                    Проверьте {resetEmail} и введите код из письма
                   </p>
                 </div>
+                <Input
+                  type="text"
+                  placeholder="Введите 6-значный код"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value)}
+                  className="h-14 text-lg text-center tracking-widest rounded-full"
+                  maxLength={6}
+                />
+                <Button
+                  onClick={() => {
+                    if (resetCode === receivedCode) {
+                      alert('Код верный! Теперь можно сбросить пароль');
+                    } else {
+                      alert('Неверный код. Проверьте письмо и попробуйте снова');
+                    }
+                  }}
+                  className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full"
+                >
+                  Подтвердить код
+                </Button>
                 <Button
                   onClick={() => {
                     setShowForgotPassword(false);
                     setResetSent(false);
+                    setShowCodeInput(false);
                     setResetEmail('');
+                    setResetCode('');
                     setShowEmailForm(true);
                   }}
-                  className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full"
+                  variant="outline"
+                  className="w-full h-14 text-lg rounded-full"
                 >
-                  Вернуться ко входу
+                  Назад ко входу
                 </Button>
               </>
-            )}
+            ) : null}
           </div>
         ) : !showEmailForm ? (
           <div className="space-y-4">

@@ -7,10 +7,10 @@ export default function AuthChecker() {
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    const publicPaths = ['/welcome', '/login', '/oferta', '/auth/yandex/callback', '/auth/telegram/callback'];
+    const publicPaths = ['/', '/welcome', '/login', '/oferta', '/auth/yandex/callback', '/auth/telegram/callback'];
     
     if (!isAuthenticated && !publicPaths.includes(location.pathname)) {
-      navigate('/welcome', { replace: true });
+      navigate('/', { replace: true });
     }
   }, [location.pathname, navigate]);
 

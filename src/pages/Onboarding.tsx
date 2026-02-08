@@ -41,7 +41,7 @@ export default function Onboarding() {
         title: "Профиль создан!",
         description: "Теперь ты можешь искать друзей для своего питомца",
       });
-      navigate('/', { replace: true });
+      navigate('/feed', { replace: true });
     }
   };
 

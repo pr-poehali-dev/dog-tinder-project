@@ -40,7 +40,7 @@ export default function TelegramCallback() {
           localStorage.setItem('user', JSON.stringify(data.user));
           
           // Перенаправляем на главную
-          navigate('/');
+          navigate('/feed');
         } else {
           setError(data.error || 'Ошибка авторизации');
         }
@@ -51,7 +51,7 @@ export default function TelegramCallback() {
   }, [searchParams, navigate]);
 
   const handleUsernameSuccess = () => {
-    navigate('/');
+    navigate('/feed');
   };
 
   return (

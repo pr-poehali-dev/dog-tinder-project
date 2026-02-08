@@ -9,7 +9,7 @@ export default function Welcome() {
     const isAuthenticated = localStorage.getItem('isAuthenticated');
     const onboardingComplete = localStorage.getItem('onboardingComplete');
     if (isAuthenticated === 'true' && onboardingComplete === 'true') {
-      navigate('/', { replace: true });
+      navigate('/feed', { replace: true });
     }
   }, [navigate]);
 

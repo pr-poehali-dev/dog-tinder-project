@@ -23,7 +23,7 @@ export default function Login() {
   const handleLogin = () => {
     localStorage.setItem('isAuthenticated', 'true');
     localStorage.setItem('onboardingComplete', 'true');
-    navigate('/', { replace: true });
+    navigate('/feed', { replace: true });
   };
 
   const handleEmailLogin = () => {

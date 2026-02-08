@@ -97,6 +97,16 @@ export default function Login() {
                 required
               />
             </div>
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="link"
+                className="text-pink-600 hover:text-pink-700"
+                onClick={() => alert('Функция восстановления пароля скоро будет доступна')}
+              >
+                Забыли пароль?
+              </Button>
+            </div>
             <Button
               type="submit"
               className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full"

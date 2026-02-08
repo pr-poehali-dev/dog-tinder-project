@@ -20,7 +20,7 @@ export default function Welcome() {
             TinDog
           </h1>
           <h2 className="text-3xl font-bold text-gray-900">
-            Твои новые знакомства
+            Больше, чем просто знакомство
           </h2>
         </div>
 
@@ -41,13 +41,7 @@ export default function Welcome() {
           </Button>
         </div>
 
-        <div className="pt-8">
-          <img 
-            src="https://cdn.poehali.dev/projects/d74a4f5a-6886-4dec-8dc8-f01016c0890c/bucket/539a5e2a-b363-40d9-be05-015ae09241fa.png"
-            alt="Welcome illustration"
-            className="w-64 mx-auto"
-          />
-        </div>
+
       </div>
 
       <div className="text-center space-y-2 text-sm text-gray-500 pb-4">

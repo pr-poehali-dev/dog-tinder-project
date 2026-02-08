@@ -116,13 +116,7 @@ export default function Onboarding() {
               </RadioGroup>
             </div>
 
-            <div className="pt-40">
-              <img 
-                src="https://cdn.poehali.dev/projects/d74a4f5a-6886-4dec-8dc8-f01016c0890c/bucket/87e08590-52df-4620-b91c-de3bba172a8b.png"
-                alt="Decoration"
-                className="w-48 mx-auto"
-              />
-            </div>
+
           </div>
         );
 

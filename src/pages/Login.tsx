@@ -12,8 +12,11 @@ export default function Login() {
   const [resetSent, setResetSent] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [resetCode, setResetCode] = useState('');
   const [receivedCode, setReceivedCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -135,12 +138,14 @@ export default function Login() {
                 <Button
                   onClick={() => {
                     if (resetCode === receivedCode) {
-                      alert('Код верный! Теперь можно сбросить пароль');
+                      setShowCodeInput(false);
+                      setShowNewPassword(true);
                     } else {
                       alert('Неверный код. Проверьте письмо и попробуйте снова');
                     }
                   }}
-                  className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full"
+                  disabled={resetCode.length !== 6}
+                  className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full disabled:opacity-50"
                 >
                   Подтвердить код
                 </Button>
@@ -157,6 +162,80 @@ export default function Login() {
                   className="w-full h-14 text-lg rounded-full"
                 >
                   Назад ко входу
+                </Button>
+              </>
+            ) : showNewPassword ? (
+              <>
+                <div className="text-center space-y-4 py-4">
+                  <Icon name="Lock" size={64} className="mx-auto text-pink-600" />
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Новый пароль
+                  </h3>
+                  <p className="text-gray-600">
+                    Придумайте новый пароль для {resetEmail}
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <Input
+                    type="password"
+                    placeholder="Новый пароль"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="h-14 text-lg rounded-full"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Повторите пароль"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-14 text-lg rounded-full"
+                  />
+                  {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                    <p className="text-red-500 text-sm text-center">Пароли не совпадают</p>
+                  )}
+                </div>
+                <Button
+                  onClick={() => {
+                    if (newPassword.length < 6) {
+                      alert('Пароль должен быть не менее 6 символов');
+                      return;
+                    }
+                    if (newPassword !== confirmPassword) {
+                      alert('Пароли не совпадают');
+                      return;
+                    }
+                    alert('Пароль успешно изменён!');
+                    setShowForgotPassword(false);
+                    setResetSent(false);
+                    setShowCodeInput(false);
+                    setShowNewPassword(false);
+                    setResetEmail('');
+                    setResetCode('');
+                    setNewPassword('');
+                    setConfirmPassword('');
+                    setShowEmailForm(true);
+                  }}
+                  disabled={!newPassword || !confirmPassword || newPassword !== confirmPassword}
+                  className="w-full h-14 text-lg bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 rounded-full disabled:opacity-50"
+                >
+                  Сохранить пароль
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setResetSent(false);
+                    setShowCodeInput(false);
+                    setShowNewPassword(false);
+                    setResetEmail('');
+                    setResetCode('');
+                    setNewPassword('');
+                    setConfirmPassword('');
+                    setShowEmailForm(true);
+                  }}
+                  variant="outline"
+                  className="w-full h-14 text-lg rounded-full"
+                >
+                  Отмена
                 </Button>
               </>
             ) : null}

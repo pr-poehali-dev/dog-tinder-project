@@ -7,6 +7,7 @@ import Icon from '@/components/ui/icon';
 export default function Login() {
   const navigate = useNavigate();
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -102,7 +103,7 @@ export default function Login() {
                 type="button"
                 variant="link"
                 className="text-pink-600 hover:text-pink-700"
-                onClick={() => alert('Функция восстановления пароля скоро будет доступна')}
+                onClick={() => setShowForgotPassword(true)}
               >
                 Забыли пароль?
               </Button>
@@ -134,6 +135,38 @@ export default function Login() {
           </Button>
         </div>
       </div>
+
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full space-y-6">
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-bold text-gray-900">
+                Подтвердите действие<br />
+                на странице tindog.ru
+              </h3>
+              <p className="text-gray-600">
+                Функция восстановления пароля<br />
+                скоро будет доступна
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Button
+                onClick={() => setShowForgotPassword(false)}
+                className="w-full h-12 text-lg bg-blue-500 hover:bg-blue-600 text-white rounded-2xl"
+              >
+                OK
+              </Button>
+              <Button
+                onClick={() => setShowForgotPassword(false)}
+                variant="ghost"
+                className="w-full h-12 text-lg text-blue-500 hover:text-blue-600"
+              >
+                Блокировать диалоговые окна
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -91,6 +91,75 @@ def handler(event: dict, context) -> dict:
         conn.commit()
         cur.close()
         conn.close()
+        
+        unisender_api_key = os.environ.get('UNISENDER_API_KEY')
+        unisender_sender_email = os.environ.get('UNISENDER_SENDER_EMAIL')
+        
+        if not unisender_api_key or not unisender_sender_email:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'error': 'Email отправка не настроена'})
+            }
+        
+        import requests
+        
+        html = f'''
+        <html>
+          <body style="font-family: Arial, sans-serif; background: linear-gradient(to bottom right, #ec4899, #f97316); padding: 40px;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+              <h1 style="color: #ec4899; font-size: 32px; margin-bottom: 20px;">🐾 TinDog</h1>
+              <h2 style="color: #1f2937; font-size: 24px; margin-bottom: 20px;">Восстановление пароля</h2>
+              <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+                Вы запросили код для восстановления пароля. Введите этот код в приложении:
+              </p>
+              <div style="background: #fef3c7; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center;">
+                <p style="color: #92400e; font-size: 14px; margin-bottom: 10px;">Ваш код:</p>
+                <p style="font-size: 48px; font-weight: bold; color: #ec4899; letter-spacing: 8px; margin: 0;">{reset_code}</p>
+              </div>
+              <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+                Код действителен в течение 15 минут. Если вы не запрашивали восстановление пароля, просто игнорируйте это письмо.
+              </p>
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+              <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+                TinDog - найди друзей для своего питомца
+              </p>
+            </div>
+          </body>
+        </html>
+        '''
+        
+        response = requests.post(
+            'https://go1.unisender.ru/ru/transactional/api/v1/email/send.json',
+            headers={
+                'X-API-KEY': unisender_api_key,
+                'Content-Type': 'application/json'
+            },
+            json={
+                'message': {
+                    'recipients': [{'email': email}],
+                    'body': {'html': html},
+                    'subject': 'Код восстановления пароля TinDog',
+                    'from_email': unisender_sender_email,
+                    'from_name': 'TinDog',
+                    'global_language': 'ru',
+                    'skip_unsubscribe': 1
+                }
+            }
+        )
+        
+        if response.status_code != 200:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'error': f'Ошибка отправки email: {response.text}'})
+            }
 
         return {
             'statusCode': 200,

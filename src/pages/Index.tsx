@@ -58,12 +58,6 @@ export default function Index() {
   const { counts } = useNotifications(user?.id || null);
 
   useEffect(() => {
-    const onboardingComplete = localStorage.getItem('onboardingComplete');
-    if (!onboardingComplete) {
-      window.location.href = '/welcome';
-      return;
-    }
-
     const currentUser = getCurrentUser();
     if (currentUser) {
       setUser(currentUser);

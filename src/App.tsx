@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
-import RedirectToWelcome from "./components/RedirectToWelcome";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
@@ -27,7 +26,6 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <RedirectToWelcome />
       <BrowserRouter>
         <Routes>
           <Route path="/welcome" element={<Welcome />} />

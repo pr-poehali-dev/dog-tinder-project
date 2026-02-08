@@ -15,12 +15,8 @@ export default function Login() {
 
   const handleLogin = () => {
     localStorage.setItem('isAuthenticated', 'true');
-    const onboardingComplete = localStorage.getItem('onboardingComplete');
-    if (onboardingComplete === 'true') {
-      navigate('/');
-    } else {
-      navigate('/onboarding');
-    }
+    localStorage.setItem('onboardingComplete', 'true');
+    navigate('/', { replace: true });
   };
 
   const handleEmailLogin = () => {
@@ -71,6 +67,7 @@ export default function Login() {
                 <Button
                   onClick={() => {
                     if (resetEmail) {
+                      console.log('Отправка кода восстановления на:', resetEmail);
                       setResetSent(true);
                     }
                   }}

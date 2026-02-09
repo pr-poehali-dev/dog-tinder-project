@@ -16,19 +16,27 @@ export default function TelegramCallback() {
     const token = searchParams.get('token');
     const phone = searchParams.get('phone');
     
+    console.log('[TelegramCallback] URL params:', { token, phone });
+    
     if (!token) {
+      console.error('[TelegramCallback] No token in URL');
       setError('Отсутствует токен авторизации');
       return;
     }
 
     // Обмен токена на JWT
+    console.log('[TelegramCallback] Calling API:', `${AUTH_API_URL}?action=callback`);
     fetch(`${AUTH_API_URL}?action=callback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, phone })
     })
-      .then(res => res.json())
+      .then(res => {
+        console.log('[TelegramCallback] Response status:', res.status);
+        return res.json();
+      })
       .then(data => {
+        console.log('[TelegramCallback] Response data:', data);
         if (data.needs_username) {
           // Нужно установить username
           setNeedsUsername(true);
@@ -42,10 +50,12 @@ export default function TelegramCallback() {
           // Перенаправляем на главную
           navigate('/feed');
         } else {
+          console.error('[TelegramCallback] Auth failed:', data.error);
           setError(data.error || 'Ошибка авторизации');
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('[TelegramCallback] Fetch error:', err);
         setError('Не удалось подключиться к серверу');
       });
   }, [searchParams, navigate]);

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthChecker from "./components/AuthChecker";
 import Welcome from "./pages/Welcome";
+import WelcomePage from "./pages/WelcomePage";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import Index from "./pages/Index";
@@ -30,7 +31,8 @@ const App = () => (
       <BrowserRouter>
         <AuthChecker />
         <Routes>
-          <Route path="/" element={<Welcome />} />
+          <Route path="/" element={<WelcomePage />} />
+          <Route path="/welcome" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           <Route path="/feed" element={<ProtectedRoute><Index /></ProtectedRoute>} />

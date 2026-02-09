@@ -18,7 +18,7 @@ interface AuthModalProps {
 
 const YANDEX_AUTH_URL = 'https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6';
 const VK_AUTH_URL = 'https://functions.poehali.dev/f48f6142-3b7e-4c7c-aa97-6fdb255f102c';
-const TELEGRAM_AUTH_URL = 'https://functions.poehali.dev/c89c74f6-84a8-46e5-af84-c6da33670f50';
+const TELEGRAM_AUTH_URL = 'https://functions.poehali.dev/9b9dc006-27a5-4b85-8cd6-bba65b4850a1';
 
 export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
   const [botUsername, setBotUsername] = useState<string>('');

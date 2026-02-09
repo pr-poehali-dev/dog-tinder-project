@@ -120,9 +120,9 @@ def save_auth_session(session_id: str, user: dict):
             new_user = cur.fetchone()
             user_id = new_user['id']
         
-        # Сохраняем session_id с привязкой к user_id
+        # Сохраняем session_id с привязкой к user_id и отмечаем как авторизованный
         cur.execute(
-            f"INSERT INTO t_p11971418_dog_tinder_project.telegram_auth_sessions (session_id, user_id, created_at) VALUES ('{session_id_escaped}', {user_id}, NOW()) ON CONFLICT (session_id) DO UPDATE SET user_id = {user_id}, created_at = NOW()"
+            f"INSERT INTO t_p11971418_dog_tinder_project.telegram_auth_sessions (session_id, user_id, authenticated, created_at) VALUES ('{session_id_escaped}', {user_id}, TRUE, NOW()) ON CONFLICT (session_id) DO UPDATE SET user_id = {user_id}, authenticated = TRUE, created_at = NOW()"
         )
         
         conn.commit()

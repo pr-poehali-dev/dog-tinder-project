@@ -3,11 +3,9 @@
 import json
 import os
 import psycopg2
+from psycopg2.extras import RealDictCursor
 import jwt
-from datetime import datetime, timedelta
-
-JWT_SECRET = os.environ.get('JWT_SECRET')
-DATABASE_URL = os.environ.get('DATABASE_URL')
+import datetime
 
 def handler(event: dict, context) -> dict:
     method = event.get('httpMethod', 'GET')
@@ -20,7 +18,8 @@ def handler(event: dict, context) -> dict:
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type'
             },
-            'body': ''
+            'body': '',
+            'isBase64Encoded': False
         }
     
     try:
@@ -36,13 +35,15 @@ def handler(event: dict, context) -> dict:
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Unknown action'})
+                'body': json.dumps({'error': 'Unknown action'}),
+                'isBase64Encoded': False
             }
     except Exception as e:
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': str(e)})
+            'body': json.dumps({'error': str(e)}),
+            'isBase64Encoded': False
         }
 
 def get_bot_username() -> dict:
@@ -52,108 +53,93 @@ def get_bot_username() -> dict:
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Bot username not configured'})
+            'body': json.dumps({'error': 'Bot username not configured'}),
+            'isBase64Encoded': False
         }
     
     return {
         'statusCode': 200,
         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'bot_username': bot_username})
+        'body': json.dumps({'bot_username': bot_username}),
+        'isBase64Encoded': False
     }
 
 def check_auth_status(data: dict) -> dict:
-    """Проверка статуса авторизации по session_id"""
-    session_id = data.get('session_id')
+    '''Проверяет статус авторизации по session_id'''
+    session_id = data.get('session_id', '').replace("'", "''")
     
     if not session_id:
         return {
             'statusCode': 400,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'authenticated': False, 'error': 'session_id required'})
+            'body': json.dumps({'authenticated': False, 'error': 'session_id required'}),
+            'isBase64Encoded': False
         }
     
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
+    dsn = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(dsn)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
         # Проверяем сессию
         cur.execute(
-            """SELECT user_id, telegram_id, authenticated 
-               FROM telegram_auth_sessions 
-               WHERE session_id = %s AND expires_at > NOW()""",
-            (session_id,)
+            f"SELECT s.user_id, s.authenticated, u.id, u.email, u.username, u.name, u.avatar_url, u.telegram_id FROM t_p11971418_dog_tinder_project.telegram_auth_sessions s JOIN t_p11971418_dog_tinder_project.users u ON s.user_id = u.id WHERE s.session_id = '{session_id}' AND s.expires_at > NOW()"
         )
         session = cur.fetchone()
         
-        if not session or not session[2]:
+        if not session or not session['authenticated']:
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'authenticated': False})
+                'body': json.dumps({'authenticated': False}),
+                'isBase64Encoded': False
             }
-        
-        user_id, telegram_id, _ = session
-        
-        # Получаем данные пользователя
-        cur.execute(
-            "SELECT id, email, name, avatar_url, telegram_id FROM users WHERE id = %s",
-            (user_id,)
-        )
-        user_row = cur.fetchone()
-        
-        if not user_row:
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'authenticated': False})
-            }
-        
-        user = {
-            'id': user_row[0],
-            'email': user_row[1],
-            'name': user_row[2],
-            'avatar_url': user_row[3],
-            'telegram_id': str(user_row[4])
-        }
         
         # Генерируем JWT токены
-        access_payload = {
-            'user_id': user['id'],
-            'telegram_id': user['telegram_id'],
-            'exp': datetime.utcnow() + timedelta(minutes=15)
+        jwt_secret = os.environ.get('JWT_SECRET', 'secret')
+        
+        access_token_payload = {
+            'user_id': session['id'],
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
         }
-        refresh_payload = {
-            'user_id': user['id'],
-            'telegram_id': user['telegram_id'],
-            'exp': datetime.utcnow() + timedelta(days=30)
+        refresh_token_payload = {
+            'user_id': session['id'],
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30)
         }
         
-        access_token = jwt.encode(access_payload, JWT_SECRET, algorithm='HS256')
-        refresh_token = jwt.encode(refresh_payload, JWT_SECRET, algorithm='HS256')
+        access_token = jwt.encode(access_token_payload, jwt_secret, algorithm='HS256')
+        refresh_token = jwt.encode(refresh_token_payload, jwt_secret, algorithm='HS256')
         
-        # Удаляем использованную сессию
-        cur.execute("DELETE FROM telegram_auth_sessions WHERE session_id = %s", (session_id,))
-        conn.commit()
+        user_data = {
+            'id': session['id'],
+            'email': session['email'],
+            'username': session['username'],
+            'name': session['name'],
+            'avatar_url': session['avatar_url'],
+            'telegram_id': session['telegram_id']
+        }
+        
+        cur.close()
+        conn.close()
         
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({
                 'authenticated': True,
-                'user': user,
                 'access_token': access_token,
                 'refresh_token': refresh_token,
-                'expires_in': 900
-            })
+                'expires_in': 900,
+                'user': user_data
+            }),
+            'isBase64Encoded': False
         }
-        
     except Exception as e:
-        print(f'Error checking auth: {e}')
+        cur.close()
+        conn.close()
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'authenticated': False, 'error': str(e)})
+            'body': json.dumps({'authenticated': False, 'error': str(e)}),
+            'isBase64Encoded': False
         }
-    finally:
-        cur.close()
-        conn.close()

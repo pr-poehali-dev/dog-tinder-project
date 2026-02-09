@@ -7,6 +7,7 @@ import { useTelegramAuth } from '@/components/extensions/telegram-bot/useTelegra
 import YandexLoginButton from '@/components/extensions/yandex-auth/YandexLoginButton';
 import VkLoginButton from '@/components/extensions/vk-auth/VkLoginButton';
 import TelegramLoginButton from '@/components/extensions/telegram-bot/TelegramLoginButton';
+import LiveActivityFeed from '@/components/LiveActivityFeed';
 
 interface AuthModalProps {
   open: boolean;
@@ -57,49 +58,59 @@ export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent">
             Вход в TinDog
           </DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="social" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="social">Соцсети</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="social" className="space-y-4 mt-4">
-            <div className="space-y-3">
-              <YandexLoginButton 
-                onClick={() => yandexAuth.login()}
-                isLoading={yandexAuth.isLoading}
-                className="w-full"
-              />
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Форма авторизации */}
+          <div>
+            <Tabs defaultValue="social" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="social">Соцсети</TabsTrigger>
+                <TabsTrigger value="email">Email</TabsTrigger>
+              </TabsList>
               
-              <VkLoginButton 
-                onClick={() => vkAuth.login()}
-                isLoading={vkAuth.isLoading}
-                className="w-full"
-              />
+              <TabsContent value="social" className="space-y-4 mt-4">
+                <div className="space-y-3">
+                  <YandexLoginButton 
+                    onClick={() => yandexAuth.login()}
+                    isLoading={yandexAuth.isLoading}
+                    className="w-full"
+                  />
+                  
+                  <VkLoginButton 
+                    onClick={() => vkAuth.login()}
+                    isLoading={vkAuth.isLoading}
+                    className="w-full"
+                  />
+                  
+                  <TelegramLoginButton 
+                    onClick={() => telegramAuth.login()}
+                    isLoading={telegramAuth.isLoading}
+                    className="w-full"
+                  />
+                </div>
+                
+                <p className="text-sm text-gray-500 text-center mt-4">
+                  Войдите через любую соцсеть для быстрого доступа
+                </p>
+              </TabsContent>
               
-              <TelegramLoginButton 
-                onClick={() => telegramAuth.login()}
-                isLoading={telegramAuth.isLoading}
-                className="w-full"
-              />
-            </div>
-            
-            <p className="text-sm text-gray-500 text-center mt-4">
-              Войдите через любую соцсеть для быстрого доступа
-            </p>
-          </TabsContent>
-          
-          <TabsContent value="email" className="mt-4">
-            <EmailAuth onSuccess={handleAuthSuccess} />
-          </TabsContent>
-        </Tabs>
+              <TabsContent value="email" className="mt-4">
+                <EmailAuth onSuccess={handleAuthSuccess} />
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Живая лента активности */}
+          <div className="hidden md:block">
+            <LiveActivityFeed />
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

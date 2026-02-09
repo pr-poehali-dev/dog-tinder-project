@@ -252,8 +252,6 @@ export function useTelegramAuth(options: UseTelegramAuthOptions): UseTelegramAut
   const login = useCallback(() => {
     // Генерируем уникальный session_id
     const sessionId = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    const botUrl = `https://t.me/${botUsername}?start=web_auth_${sessionId}`;
-    window.open(botUrl, "_blank");
     
     // Сохраняем session_id для polling
     localStorage.setItem('telegram_auth_session_id', sessionId);
@@ -261,6 +259,10 @@ export function useTelegramAuth(options: UseTelegramAuthOptions): UseTelegramAut
     
     // Запускаем polling
     startAuthPolling(sessionId);
+    
+    // Используем прямой переход для открытия Telegram приложения
+    const botUrl = `tg://resolve?domain=${botUsername}&start=web_auth_${sessionId}`;
+    window.location.href = botUrl;
   }, [botUsername, startAuthPolling]);
 
   /**

@@ -291,7 +291,7 @@ def get_cors_headers() -> dict:
     allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*")
     return {
         "Access-Control-Allow-Origin": allowed_origins,
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
     }
 
@@ -558,6 +558,18 @@ def handle_logout(cursor, body: dict) -> dict:
     return cors_response(200, {"success": True})
 
 
+def handle_get_bot_username() -> dict:
+    """
+    GET ?action=bot-username
+    Return bot username from environment.
+    """
+    bot_username = os.environ.get("TELEGRAM_BOT_USERNAME", "")
+    if not bot_username:
+        return cors_response(500, {"error": "Bot username not configured"})
+    
+    return cors_response(200, {"bot_username": bot_username})
+
+
 # =============================================================================
 # MAIN HANDLER
 # =============================================================================
@@ -605,6 +617,8 @@ def handler(event, context):
             response = handle_refresh(cursor, body)
         elif action == "logout" and method == "POST":
             response = handle_logout(cursor, body)
+        elif action == "bot-username" and method == "GET":
+            return handle_get_bot_username()
         else:
             response = cors_response(400, {"error": f"Unknown action: {action}"})
 

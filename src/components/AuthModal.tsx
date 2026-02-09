@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import EmailAuth from '@/components/EmailAuth';
@@ -20,6 +21,21 @@ const VK_AUTH_URL = 'https://functions.poehali.dev/f48f6142-3b7e-4c7c-aa97-6fdb2
 const TELEGRAM_AUTH_URL = 'https://functions.poehali.dev/c89c74f6-84a8-46e5-af84-c6da33670f50';
 
 export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
+  const [botUsername, setBotUsername] = useState<string>('');
+
+  useEffect(() => {
+    fetch(`${TELEGRAM_AUTH_URL}?action=bot-username`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.bot_username) {
+          setBotUsername(data.bot_username);
+        }
+      })
+      .catch(() => {
+        setBotUsername('tindog_bot');
+      });
+  }, []);
+
   const yandexAuth = useYandexAuth({
     apiUrls: {
       authUrl: `${YANDEX_AUTH_URL}?action=auth-url`,
@@ -39,7 +55,7 @@ export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalPr
   });
 
   const telegramAuth = useTelegramAuth({
-    botUsername: import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'tindog_matches_bot',
+    botUsername: botUsername,
     apiUrls: {
       callback: `${TELEGRAM_AUTH_URL}?action=callback`,
       refresh: `${TELEGRAM_AUTH_URL}?action=refresh`,
@@ -88,11 +104,13 @@ export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalPr
                     className="w-full"
                   />
                   
-                  <TelegramLoginButton 
-                    onClick={() => telegramAuth.login()}
-                    isLoading={telegramAuth.isLoading}
-                    className="w-full"
-                  />
+                  {botUsername && (
+                    <TelegramLoginButton 
+                      onClick={() => telegramAuth.login()}
+                      isLoading={telegramAuth.isLoading}
+                      className="w-full"
+                    />
+                  )}
                 </div>
                 
                 <p className="text-sm text-gray-500 text-center mt-4">

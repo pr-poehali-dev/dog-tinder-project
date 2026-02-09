@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Handle OPTIONS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Handle webhook without message",
+      "method": "POST",
+      "path": "/",
+      "body": "{\"update_id\": 123}",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "ok": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

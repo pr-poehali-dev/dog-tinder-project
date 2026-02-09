@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "Handle webhook",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "message": {
+          "chat": {"id": 123456},
+          "text": "/start",
+          "from": {
+            "id": 123456,
+            "first_name": "Test",
+            "username": "testuser"
+          }
+        }
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "ok": true
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Handle OPTIONS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

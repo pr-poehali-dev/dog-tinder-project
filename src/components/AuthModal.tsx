@@ -2,8 +2,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import EmailAuth from '@/components/EmailAuth';
 import { useYandexAuth } from '@/components/extensions/yandex-auth/useYandexAuth';
+import { useVkAuth } from '@/components/extensions/vk-auth/useVkAuth';
 import { useTelegramAuth } from '@/components/extensions/telegram-bot/useTelegramAuth';
 import YandexLoginButton from '@/components/extensions/yandex-auth/YandexLoginButton';
+import VkLoginButton from '@/components/extensions/vk-auth/VkLoginButton';
 import TelegramLoginButton from '@/components/extensions/telegram-bot/TelegramLoginButton';
 import LiveActivityFeed from '@/components/LiveActivityFeed';
 
@@ -14,6 +16,7 @@ interface AuthModalProps {
 }
 
 const YANDEX_AUTH_URL = 'https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6';
+const VK_AUTH_URL = 'https://functions.poehali.dev/f48f6142-3b7e-4c7c-aa97-6fdb255f102c';
 const TELEGRAM_AUTH_URL = 'https://functions.poehali.dev/c89c74f6-84a8-46e5-af84-c6da33670f50';
 
 export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
@@ -23,6 +26,15 @@ export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalPr
       callback: `${YANDEX_AUTH_URL}?action=callback`,
       refresh: `${YANDEX_AUTH_URL}?action=refresh`,
       logout: `${YANDEX_AUTH_URL}?action=logout`,
+    },
+  });
+
+  const vkAuth = useVkAuth({
+    apiUrls: {
+      authUrl: `${VK_AUTH_URL}?action=auth-url`,
+      callback: `${VK_AUTH_URL}?action=callback`,
+      refresh: `${VK_AUTH_URL}?action=refresh`,
+      logout: `${VK_AUTH_URL}?action=logout`,
     },
   });
 
@@ -70,6 +82,12 @@ export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalPr
                     className="w-full"
                   />
                   
+                  <VkLoginButton 
+                    onClick={() => vkAuth.login()}
+                    isLoading={vkAuth.isLoading}
+                    className="w-full"
+                  />
+                  
                   <TelegramLoginButton 
                     onClick={() => telegramAuth.login()}
                     isLoading={telegramAuth.isLoading}
@@ -78,7 +96,7 @@ export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalPr
                 </div>
                 
                 <p className="text-sm text-gray-500 text-center mt-4">
-                  Войдите через Яндекс или Telegram для быстрого доступа
+                  Войдите через соцсеть для быстрого доступа
                 </p>
               </TabsContent>
               

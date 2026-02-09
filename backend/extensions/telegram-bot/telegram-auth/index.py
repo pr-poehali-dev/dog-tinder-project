@@ -582,6 +582,76 @@ def handle_get_bot_username() -> dict:
     return cors_response(200, {"bot_username": bot_username})
 
 
+def handle_check_auth_status(cursor, body: dict) -> dict:
+    """
+    POST ?action=check_auth
+    Проверка статуса авторизации по session_id после регистрации в боте.
+    """
+    session_id = body.get("session_id")
+    
+    if not session_id:
+        return cors_response(400, {"error": "session_id required"})
+    
+    schema = get_schema()
+    
+    # Ищем сессию
+    cursor.execute(f"""
+        SELECT user_id, authenticated_at, expires_at
+        FROM {schema}telegram_auth_sessions
+        WHERE session_id = %s
+    """, (session_id,))
+    
+    row = cursor.fetchone()
+    
+    if not row:
+        return cors_response(200, {"authenticated": False, "error": "Session not found"})
+    
+    user_id, authenticated_at, expires_at = row
+    
+    # Проверяем, не истекла ли сессия
+    if datetime.now(timezone.utc) > expires_at.replace(tzinfo=timezone.utc):
+        return cors_response(200, {"authenticated": False, "error": "Session expired"})
+    
+    # Проверяем, авторизован ли пользователь
+    if not authenticated_at or not user_id:
+        return cors_response(200, {"authenticated": False, "pending": True})
+    
+    # Получаем данные пользователя
+    user = get_user_by_id(cursor, user_id)
+    
+    if not user:
+        return cors_response(200, {"authenticated": False, "error": "User not found"})
+    
+    # Проверяем, есть ли username
+    if not user.get("username"):
+        return cors_response(200, {
+            "authenticated": False,
+            "needs_username": True,
+            "user_id": user["id"]
+        })
+    
+    # Генерируем токены
+    jwt_secret = get_env("JWT_SECRET")
+    access_token = create_jwt(user["id"], jwt_secret, expires_in=900)
+    refresh_token = generate_token(64)
+    refresh_token_hash = hash_token(refresh_token)
+    
+    expires_at_token = datetime.now(timezone.utc) + timedelta(days=30)
+    save_refresh_token(cursor, user["id"], refresh_token_hash, expires_at_token)
+    
+    # Удаляем использованную сессию
+    cursor.execute(f"""
+        DELETE FROM {schema}telegram_auth_sessions WHERE session_id = %s
+    """, (session_id,))
+    
+    return cors_response(200, {
+        "authenticated": True,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "user": user
+    })
+
+
 # =============================================================================
 # MAIN HANDLER
 # =============================================================================
@@ -629,6 +699,8 @@ def handler(event, context):
             response = handle_refresh(cursor, body)
         elif action == "logout" and method == "POST":
             response = handle_logout(cursor, body)
+        elif action == "check_auth" and method == "POST":
+            response = handle_check_auth_status(cursor, body)
         elif action == "bot-username" and method == "GET":
             return handle_get_bot_username()
         else:

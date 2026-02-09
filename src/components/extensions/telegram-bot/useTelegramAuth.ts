@@ -47,7 +47,7 @@ interface UseTelegramAuthReturn {
   handleCallback: (token: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
-  getAuthHeader: () => { Authorization: string } | {};
+  getAuthHeader: () => { Authorization: string } | Record<string, never>;
 }
 
 // =============================================================================
@@ -171,13 +171,69 @@ export function useTelegramAuth(options: UseTelegramAuthOptions): UseTelegramAut
     onAuthChange?.(user);
   }, [user, onAuthChange]);
 
+  const startAuthPolling = useCallback(async (sessionId: string) => {
+    const maxAttempts = 60; // 5 минут (каждые 5 секунд)
+    let attempts = 0;
+    
+    const pollInterval = setInterval(async () => {
+      attempts++;
+      
+      if (attempts > maxAttempts) {
+        clearInterval(pollInterval);
+        localStorage.removeItem('telegram_auth_session_id');
+        setError('Timeout: authorization not completed');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${apiUrls.callback.replace('callback', 'check_auth')}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.authenticated) {
+          clearInterval(pollInterval);
+          localStorage.removeItem('telegram_auth_session_id');
+          
+          // Сохраняем токены
+          setAccessToken(data.access_token);
+          setUser(data.user);
+          setStoredRefreshToken(data.refresh_token);
+          scheduleRefresh(data.expires_in || 900, refreshTokenFn);
+          
+          // Перезагружаем страницу для применения авторизации
+          window.location.reload();
+        } else if (data.needs_username) {
+          clearInterval(pollInterval);
+          localStorage.removeItem('telegram_auth_session_id');
+          // Перенаправляем на установку username
+          window.location.href = `/auth/telegram/username?user_id=${data.user_id}`;
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 5000); // Проверка каждые 5 секунд
+  }, [apiUrls, scheduleRefresh, refreshTokenFn]);
+
   /**
-   * Open Telegram bot - just redirect, no API call
+   * Open Telegram bot and start polling for auth
    */
   const login = useCallback(() => {
-    const botUrl = `https://t.me/${botUsername}?start=web_auth`;
+    // Генерируем уникальный session_id
+    const sessionId = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const botUrl = `https://t.me/${botUsername}?start=web_auth_${sessionId}`;
     window.open(botUrl, "_blank");
-  }, [botUsername]);
+    
+    // Сохраняем session_id для polling
+    localStorage.setItem('telegram_auth_session_id', sessionId);
+    localStorage.setItem('telegram_auth_start_time', Date.now().toString());
+    
+    // Запускаем polling
+    startAuthPolling(sessionId);
+  }, [botUsername, startAuthPolling]);
 
   /**
    * Exchange token for JWT (call from callback page)

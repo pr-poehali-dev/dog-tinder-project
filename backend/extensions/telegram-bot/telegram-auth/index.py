@@ -325,12 +325,17 @@ def handle_callback(cursor, body: dict) -> dict:
     token = body.get("token")
     phone = body.get("phone")  # Получаем телефон из запроса
     
+    print(f"[DEBUG] handle_callback called with token={token}, phone={phone}")
+    
     if not token:
+        print("[ERROR] Missing token in request")
         return cors_response(400, {"error": "Missing token"})
 
     token_data = get_auth_token(cursor, token)
+    print(f"[DEBUG] token_data from DB: {token_data}")
 
     if not token_data:
+        print("[ERROR] Token not found in database")
         return cors_response(404, {"error": "Token not found"})
 
     # Check if expired (handle both naive and aware datetime from DB)
@@ -340,14 +345,17 @@ def handle_callback(cursor, body: dict) -> dict:
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     if expires_at < now:
+        print(f"[ERROR] Token expired: expires_at={expires_at}, now={now}")
         return cors_response(410, {"error": "Token expired"})
 
     # Check if already used
     if token_data["used"]:
+        print("[ERROR] Token already used")
         return cors_response(410, {"error": "Token already used"})
 
     # Check if user data exists
     if not token_data["telegram_id"]:
+        print("[ERROR] Token not authenticated - no telegram_id")
         return cors_response(400, {"error": "Token not authenticated"})
 
     # Get JWT secret
@@ -356,6 +364,7 @@ def handle_callback(cursor, body: dict) -> dict:
         return cors_response(500, {"error": "Server configuration error"})
 
     # Create or update user
+    print(f"[DEBUG] Creating/updating user with telegram_id={token_data['telegram_id']}, phone={phone}")
     user = create_or_update_user(
         cursor,
         telegram_id=token_data["telegram_id"],
@@ -365,12 +374,14 @@ def handle_callback(cursor, body: dict) -> dict:
         photo_url=token_data["telegram_photo_url"],
         phone=phone  # Передаём телефон
     )
+    print(f"[DEBUG] User created/updated: {user}")
 
     # Mark token as used
     mark_token_used(cursor, token)
 
     # If new user without username - ask to set it
     if not user['username']:
+        print(f"[INFO] User needs username: user_id={user['id']}")
         return cors_response(200, {
             'needs_username': True,
             'user_id': user['id'],
@@ -384,7 +395,8 @@ def handle_callback(cursor, body: dict) -> dict:
     refresh_expires = datetime.now(timezone.utc) + timedelta(days=30)
 
     save_refresh_token(cursor, user["id"], refresh_token_hash, refresh_expires)
-
+    
+    print(f"[SUCCESS] Auth completed for user_id={user['id']}")
     return cors_response(200, {
         "access_token": access_token,
         "refresh_token": refresh_token,

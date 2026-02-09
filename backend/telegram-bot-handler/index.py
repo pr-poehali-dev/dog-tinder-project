@@ -57,12 +57,18 @@ def handler(event: dict, context) -> dict:
             return success_response({'ok': True})
         
         # Обработка обычной команды /start
-        elif text == '/start':
-            welcome_text = (
-                "🐕 Добро пожаловать в TinDog Bot!\n\n"
-                "Для авторизации на сайте используйте кнопку 'Войти через Telegram' в браузере."
-            )
-            send_telegram_message(bot_token, chat_id, welcome_text)
+        elif text == '/start' or text.startswith('/start'):
+            welcome_text = "🐕 Добро пожаловать в TinDog Bot!\n\nНажмите кнопку ниже, чтобы войти на сайт:"
+            
+            # Отправляем сообщение с кнопкой Web App
+            keyboard = {
+                'inline_keyboard': [[{
+                    'text': '🚀 Войти на сайт',
+                    'web_app': {'url': site_url}
+                }]]
+            }
+            
+            send_telegram_message_with_keyboard(bot_token, chat_id, welcome_text, keyboard)
             return success_response({'ok': True})
         
         return success_response({'ok': True})
@@ -147,6 +153,21 @@ def send_telegram_message(bot_token: str, chat_id: int, text: str):
         requests.post(url, json=payload, timeout=5)
     except Exception as e:
         print(f"Send message error: {e}")
+
+def send_telegram_message_with_keyboard(bot_token: str, chat_id: int, text: str, keyboard: dict):
+    '''Отправляет сообщение с inline клавиатурой'''
+    url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
+    
+    payload = {
+        'chat_id': chat_id,
+        'text': text,
+        'reply_markup': keyboard
+    }
+    
+    try:
+        requests.post(url, json=payload, timeout=5)
+    except Exception as e:
+        print(f"Send message with keyboard error: {e}")
 
 def success_response(data: dict) -> dict:
     return {

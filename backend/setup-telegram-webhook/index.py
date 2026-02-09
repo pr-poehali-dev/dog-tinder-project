@@ -23,7 +23,7 @@ def handler(event: dict, context) -> dict:
     
     try:
         bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-        webhook_url = 'https://functions.poehali.dev/933e74d4-aa38-421d-9e38-1b5281a86b50'
+        webhook_url = 'https://functions.poehali.dev/546506f0-8223-47f9-bf7d-87ca425c8c51'
         
         if not bot_token:
             return {

@@ -171,6 +171,31 @@ export function useTelegramAuth(options: UseTelegramAuthOptions): UseTelegramAut
     onAuthChange?.(user);
   }, [user, onAuthChange]);
 
+  const checkUserPetAndRedirect = useCallback(async (token: string) => {
+    try {
+      // Проверяем наличие питомца у пользователя
+      const response = await fetch('https://functions.poehali.dev/c7b05c84-a7a2-404e-a1f0-a80c56816d60?action=my-pets', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.pets && data.pets.length > 0) {
+        // Питомец есть - направляем в ленту
+        window.location.href = '/feed';
+      } else {
+        // Питомца нет - направляем на создание профиля
+        window.location.href = '/profile/create-pet';
+      }
+    } catch (err) {
+      console.error('Error checking pet:', err);
+      // В случае ошибки направляем на главную
+      window.location.href = '/feed';
+    }
+  }, []);
+
   const startAuthPolling = useCallback(async (sessionId: string) => {
     const maxAttempts = 60; // 5 минут (каждые 5 секунд)
     let attempts = 0;
@@ -198,14 +223,17 @@ export function useTelegramAuth(options: UseTelegramAuthOptions): UseTelegramAut
           clearInterval(pollInterval);
           localStorage.removeItem('telegram_auth_session_id');
           
-          // Сохраняем токены
+          // Сохраняем токены и данные пользователя
           setAccessToken(data.access_token);
           setUser(data.user);
           setStoredRefreshToken(data.refresh_token);
+          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('refresh_token', data.refresh_token);
+          localStorage.setItem('user', JSON.stringify(data.user));
           scheduleRefresh(data.expires_in || 900, refreshTokenFn);
           
-          // Перезагружаем страницу для применения авторизации
-          window.location.reload();
+          // Проверяем, есть ли у пользователя питомец
+          void checkUserPetAndRedirect(data.access_token);
         } else if (data.needs_username) {
           clearInterval(pollInterval);
           localStorage.removeItem('telegram_auth_session_id');

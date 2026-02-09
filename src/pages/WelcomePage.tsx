@@ -1,10 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import AuthModal from '@/components/AuthModal';
 import LiveActivityFeed from '@/components/LiveActivityFeed';
 
+const PETS_API_URL = 'https://functions.poehali.dev/c7b05c84-a7a2-404e-a1f0-a80c56816d60';
+
 export default function WelcomePage() {
+  const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const checkAuthAndRedirect = async () => {
+      const accessToken = localStorage.getItem('access_token');
+      
+      if (!accessToken) {
+        setChecking(false);
+        return;
+      }
+
+      try {
+        // Проверяем, есть ли у пользователя питомец
+        const response = await fetch(`${PETS_API_URL}?action=my-pets`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.pets && data.pets.length > 0) {
+          // Есть питомец - направляем в ленту
+          navigate('/feed', { replace: true });
+        } else {
+          // Питомца нет - направляем на создание профиля
+          navigate('/profile/create-pet', { replace: true });
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setChecking(false);
+      }
+    };
+
+    checkAuthAndRedirect();
+  }, [navigate]);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-purple-50 to-orange-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
 
   const features = [
     {

@@ -39,10 +39,10 @@ export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalPr
   });
 
   const telegramAuth = useTelegramAuth({
-    botUsername: 'TinDogAuthBot',
+    botUsername: import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'tindog_matches_bot',
     apiUrls: {
-      verifyAuth: `${TELEGRAM_AUTH_URL}?action=verify`,
-      createUser: `${TELEGRAM_AUTH_URL}?action=create-user`,
+      callback: `${TELEGRAM_AUTH_URL}?action=callback`,
+      refresh: `${TELEGRAM_AUTH_URL}?action=refresh`,
       logout: `${TELEGRAM_AUTH_URL}?action=logout`,
     },
   });

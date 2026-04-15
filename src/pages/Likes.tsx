@@ -155,7 +155,7 @@ export default function Likes() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={() => (window.location.href = '/feed')}>
+              <Button variant="ghost" onClick={() => (window.location.href = '/')}>
                 <Icon name="Home" size={24} />
               </Button>
               <Button variant="ghost" onClick={() => (window.location.href = '/chats')}>

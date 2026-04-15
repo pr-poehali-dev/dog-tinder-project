@@ -4,11 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AuthChecker from "./components/AuthChecker";
-import Welcome from "./pages/Welcome";
-import Login from "./pages/Login";
-import Onboarding from "./pages/Onboarding";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import Likes from "./pages/Likes";
@@ -28,18 +23,14 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthChecker />
         <Routes>
-          <Route path="/" element={<Welcome />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-          <Route path="/feed" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/likes" element={<ProtectedRoute><Likes /></ProtectedRoute>} />
-          <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
+          <Route path="/" element={<Index />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/likes" element={<Likes />} />
+          <Route path="/chats" element={<Chats />} />
           <Route path="/oferta" element={<Oferta />} />
-          <Route path="/chatgpt" element={<ProtectedRoute><ChatGPTPage /></ProtectedRoute>} />
-          <Route path="/breeding-process" element={<ProtectedRoute><BreedingProcess /></ProtectedRoute>} />
+          <Route path="/chatgpt" element={<ChatGPTPage />} />
+          <Route path="/breeding-process" element={<BreedingProcess />} />
           <Route path="/auth/yandex/callback" element={<YandexCallback />} />
           <Route path="/auth/telegram/callback" element={<TelegramCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

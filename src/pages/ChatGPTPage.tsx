@@ -59,13 +59,10 @@ export default function ChatGPTPage() {
     if (savedMessages) {
       try {
         const parsed = JSON.parse(savedMessages);
-        const messagesWithDates = parsed.map((msg: unknown) => {
-          const message = msg as { timestamp: string };
-          return {
-            ...message,
-            timestamp: new Date(message.timestamp)
-          };
-        });
+        const messagesWithDates = parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
         setMessages(messagesWithDates);
       } catch (error) {
         console.error('Failed to load chat history:', error);
@@ -150,7 +147,7 @@ export default function ChatGPTPage() {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button onClick={() => (window.location.href = '/feed')} className="lg:hidden">
+              <button onClick={() => (window.location.href = '/chats')} className="lg:hidden">
                 <Icon name="ArrowLeft" size={24} className="text-gray-600" />
               </button>
               <div className="relative">

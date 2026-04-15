@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import UsernameSetup from '@/components/UsernameSetup';
 
-const AUTH_API_URL = 'https://functions.poehali.dev/1a7a39de-f267-44a5-aaf6-04b5c3610d87';
+const AUTH_API_URL = 'https://functions.poehali.dev/c89c74f6-84a8-46e5-af84-c6da33670f50';
 
 export default function TelegramCallback() {
   const [searchParams] = useSearchParams();
@@ -16,27 +16,19 @@ export default function TelegramCallback() {
     const token = searchParams.get('token');
     const phone = searchParams.get('phone');
     
-    console.log('[TelegramCallback] URL params:', { token, phone });
-    
     if (!token) {
-      console.error('[TelegramCallback] No token in URL');
       setError('Отсутствует токен авторизации');
       return;
     }
 
     // Обмен токена на JWT
-    console.log('[TelegramCallback] Calling API:', `${AUTH_API_URL}?action=callback`);
     fetch(`${AUTH_API_URL}?action=callback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, phone })
     })
-      .then(res => {
-        console.log('[TelegramCallback] Response status:', res.status);
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => {
-        console.log('[TelegramCallback] Response data:', data);
         if (data.needs_username) {
           // Нужно установить username
           setNeedsUsername(true);
@@ -50,12 +42,10 @@ export default function TelegramCallback() {
           // Перенаправляем на главную
           navigate('/feed');
         } else {
-          console.error('[TelegramCallback] Auth failed:', data.error);
           setError(data.error || 'Ошибка авторизации');
         }
       })
-      .catch((err) => {
-        console.error('[TelegramCallback] Fetch error:', err);
+      .catch(() => {
         setError('Не удалось подключиться к серверу');
       });
   }, [searchParams, navigate]);

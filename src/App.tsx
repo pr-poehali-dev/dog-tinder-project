@@ -16,12 +16,10 @@ import Likes from "./pages/Likes";
 import Chats from "./pages/Chats";
 import Oferta from "./pages/Oferta";
 import YandexCallback from "./pages/YandexCallback";
-import VkCallback from "./pages/VkCallback";
 import TelegramCallback from "./pages/TelegramCallback";
 import ChatGPTPage from "./pages/ChatGPTPage";
 import BreedingProcess from "./pages/BreedingProcess";
 import NotFound from "./pages/NotFound";
-import CreatePetProfile from "./pages/CreatePetProfile";
 
 const queryClient = new QueryClient();
 
@@ -37,7 +35,6 @@ const App = () => (
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-          <Route path="/profile/create-pet" element={<ProtectedRoute><CreatePetProfile /></ProtectedRoute>} />
           <Route path="/feed" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/likes" element={<ProtectedRoute><Likes /></ProtectedRoute>} />
@@ -46,7 +43,6 @@ const App = () => (
           <Route path="/chatgpt" element={<ProtectedRoute><ChatGPTPage /></ProtectedRoute>} />
           <Route path="/breeding-process" element={<ProtectedRoute><BreedingProcess /></ProtectedRoute>} />
           <Route path="/auth/yandex/callback" element={<YandexCallback />} />
-          <Route path="/auth/vk/callback" element={<VkCallback />} />
           <Route path="/auth/telegram/callback" element={<TelegramCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

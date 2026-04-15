@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import EmailAuth from '@/components/EmailAuth';
@@ -17,25 +16,10 @@ interface AuthModalProps {
 }
 
 const YANDEX_AUTH_URL = 'https://functions.poehali.dev/39b02f75-9132-4979-a6d8-3685a9ba28f6';
-const VK_AUTH_URL = 'https://functions.poehali.dev/f48f6142-3b7e-4c7c-aa97-6fdb255f102c';
-const TELEGRAM_AUTH_URL = 'https://functions.poehali.dev/9b9dc006-27a5-4b85-8cd6-bba65b4850a1';
+const VK_AUTH_URL = 'https://functions.poehali.dev/3a8e0b3c-7fe6-48be-bb95-6bf5ee0bba15';
+const TELEGRAM_AUTH_URL = 'https://functions.poehali.dev/3b5c7e68-2890-4ae2-bc77-35b0b86a40c3';
 
 export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
-  const [botUsername, setBotUsername] = useState<string>('');
-
-  useEffect(() => {
-    fetch(`${TELEGRAM_AUTH_URL}?action=bot-username`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.bot_username) {
-          setBotUsername(data.bot_username);
-        }
-      })
-      .catch(() => {
-        setBotUsername('tindog_bot');
-      });
-  }, []);
-
   const yandexAuth = useYandexAuth({
     apiUrls: {
       authUrl: `${YANDEX_AUTH_URL}?action=auth-url`,
@@ -55,10 +39,10 @@ export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalPr
   });
 
   const telegramAuth = useTelegramAuth({
-    botUsername: botUsername,
+    botUsername: 'TinDogAuthBot',
     apiUrls: {
-      callback: `${TELEGRAM_AUTH_URL}?action=callback`,
-      refresh: `${TELEGRAM_AUTH_URL}?action=refresh`,
+      verifyAuth: `${TELEGRAM_AUTH_URL}?action=verify`,
+      createUser: `${TELEGRAM_AUTH_URL}?action=create-user`,
       logout: `${TELEGRAM_AUTH_URL}?action=logout`,
     },
   });
@@ -104,17 +88,15 @@ export default function AuthModal({ open, onOpenChange, onSuccess }: AuthModalPr
                     className="w-full"
                   />
                   
-                  {botUsername && (
-                    <TelegramLoginButton 
-                      onClick={() => telegramAuth.login()}
-                      isLoading={telegramAuth.isLoading}
-                      className="w-full"
-                    />
-                  )}
+                  <TelegramLoginButton 
+                    onClick={() => telegramAuth.login()}
+                    isLoading={telegramAuth.isLoading}
+                    className="w-full"
+                  />
                 </div>
                 
                 <p className="text-sm text-gray-500 text-center mt-4">
-                  Войдите через соцсеть для быстрого доступа
+                  Войдите через любую соцсеть для быстрого доступа
                 </p>
               </TabsContent>
               

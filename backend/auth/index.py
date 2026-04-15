@@ -25,14 +25,8 @@ def handler(event: dict, context) -> dict:
         }
     
     try:
-        query_params = event.get('queryStringParameters', {}) or {}
-        action = query_params.get('action')
-        
-        if not action:
-            body = json.loads(event.get('body', '{}'))
-            action = body.get('action')
-        else:
-            body = json.loads(event.get('body', '{}'))
+        body = json.loads(event.get('body', '{}'))
+        action = body.get('action')
         
         if action == 'send_code':
             return send_verification_code(body)
@@ -50,8 +44,6 @@ def handler(event: dict, context) -> dict:
             return login_with_password(body)
         elif action == 'reset_password':
             return reset_password(body)
-        elif action == 'callback':
-            return telegram_callback(body)
         else:
             return {
                 'statusCode': 400,
@@ -599,111 +591,3 @@ def reset_password(body: dict) -> dict:
     finally:
         cur.close()
         conn.close()
-
-def telegram_callback(body: dict) -> dict:
-    '''Обработка callback от Telegram после авторизации'''
-    token = body.get('token', '').strip()
-    phone = body.get('phone', '').strip()
-    
-    if not token:
-        return {
-            'statusCode': 400,
-            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Токен отсутствует'})
-        }
-    
-    dsn = os.environ.get('DATABASE_URL')
-    conn = psycopg2.connect(dsn)
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    
-    try:
-        # Проверяем токен и получаем telegram_id
-        token_escaped = token.replace("'", "''")
-        cur.execute(
-            f"SELECT telegram_id, expires_at FROM t_p11971418_dog_tinder_project.telegram_auth_tokens WHERE token = '{token_escaped}'"
-        )
-        token_data = cur.fetchone()
-        
-        if not token_data:
-            return {
-                'statusCode': 404,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Токен не найден'})
-            }
-        
-        if int(time.time()) > token_data['expires_at']:
-            return {
-                'statusCode': 400,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Токен истёк'})
-            }
-        
-        telegram_id = token_data['telegram_id']
-        
-        # Ищем пользователя по telegram_id
-        cur.execute(
-            f"SELECT id, email, username, name, avatar_url, telegram_id FROM t_p11971418_dog_tinder_project.users WHERE telegram_id = {telegram_id}"
-        )
-        user = cur.fetchone()
-        
-        if not user:
-            return {
-                'statusCode': 404,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Пользователь не найден'})
-            }
-        
-        # Проверяем, есть ли username
-        if not user['username']:
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({
-                    'needs_username': True,
-                    'user_id': user['id']
-                })
-            }
-        
-        # Генерируем JWT токены
-        access_token = generate_jwt(user['id'])
-        refresh_token = generate_jwt(user['id'], is_refresh=True)
-        
-        # Удаляем использованный токен
-        cur.execute(
-            f"DELETE FROM t_p11971418_dog_tinder_project.telegram_auth_tokens WHERE token = '{token_escaped}'"
-        )
-        conn.commit()
-        
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({
-                'access_token': access_token,
-                'refresh_token': refresh_token,
-                'user': dict(user)
-            })
-        }
-    finally:
-        cur.close()
-        conn.close()
-
-def generate_jwt(user_id: int, is_refresh: bool = False) -> str:
-    '''Генерация JWT токена'''
-    import base64
-    
-    # Простая JWT реализация для демонстрации
-    # В production использовать PyJWT библиотеку
-    header = base64.b64encode(json.dumps({'alg': 'HS256', 'typ': 'JWT'}).encode()).decode()
-    
-    exp = int(time.time()) + (86400 * 30 if is_refresh else 3600)  # 30 дней или 1 час
-    payload = base64.b64encode(json.dumps({
-        'user_id': user_id,
-        'exp': exp,
-        'type': 'refresh' if is_refresh else 'access'
-    }).encode()).decode()
-    
-    secret = os.environ.get('JWT_SECRET', 'default-secret-key')
-    signature_data = f"{header}.{payload}.{secret}"
-    signature = base64.b64encode(hashlib.sha256(signature_data.encode()).digest()).decode()
-    
-    return f"{header}.{payload}.{signature}"

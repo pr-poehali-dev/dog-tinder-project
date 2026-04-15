@@ -291,7 +291,7 @@ def get_cors_headers() -> dict:
     allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*")
     return {
         "Access-Control-Allow-Origin": allowed_origins,
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
     }
 
@@ -325,17 +325,12 @@ def handle_callback(cursor, body: dict) -> dict:
     token = body.get("token")
     phone = body.get("phone")  # Получаем телефон из запроса
     
-    print(f"[DEBUG] handle_callback called with token={token}, phone={phone}")
-    
     if not token:
-        print("[ERROR] Missing token in request")
         return cors_response(400, {"error": "Missing token"})
 
     token_data = get_auth_token(cursor, token)
-    print(f"[DEBUG] token_data from DB: {token_data}")
 
     if not token_data:
-        print("[ERROR] Token not found in database")
         return cors_response(404, {"error": "Token not found"})
 
     # Check if expired (handle both naive and aware datetime from DB)
@@ -345,17 +340,14 @@ def handle_callback(cursor, body: dict) -> dict:
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     if expires_at < now:
-        print(f"[ERROR] Token expired: expires_at={expires_at}, now={now}")
         return cors_response(410, {"error": "Token expired"})
 
     # Check if already used
     if token_data["used"]:
-        print("[ERROR] Token already used")
         return cors_response(410, {"error": "Token already used"})
 
     # Check if user data exists
     if not token_data["telegram_id"]:
-        print("[ERROR] Token not authenticated - no telegram_id")
         return cors_response(400, {"error": "Token not authenticated"})
 
     # Get JWT secret
@@ -364,7 +356,6 @@ def handle_callback(cursor, body: dict) -> dict:
         return cors_response(500, {"error": "Server configuration error"})
 
     # Create or update user
-    print(f"[DEBUG] Creating/updating user with telegram_id={token_data['telegram_id']}, phone={phone}")
     user = create_or_update_user(
         cursor,
         telegram_id=token_data["telegram_id"],
@@ -374,14 +365,12 @@ def handle_callback(cursor, body: dict) -> dict:
         photo_url=token_data["telegram_photo_url"],
         phone=phone  # Передаём телефон
     )
-    print(f"[DEBUG] User created/updated: {user}")
 
     # Mark token as used
     mark_token_used(cursor, token)
 
     # If new user without username - ask to set it
     if not user['username']:
-        print(f"[INFO] User needs username: user_id={user['id']}")
         return cors_response(200, {
             'needs_username': True,
             'user_id': user['id'],
@@ -395,8 +384,7 @@ def handle_callback(cursor, body: dict) -> dict:
     refresh_expires = datetime.now(timezone.utc) + timedelta(days=30)
 
     save_refresh_token(cursor, user["id"], refresh_token_hash, refresh_expires)
-    
-    print(f"[SUCCESS] Auth completed for user_id={user['id']}")
+
     return cors_response(200, {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -570,88 +558,6 @@ def handle_logout(cursor, body: dict) -> dict:
     return cors_response(200, {"success": True})
 
 
-def handle_get_bot_username() -> dict:
-    """
-    GET ?action=bot-username
-    Return bot username from environment.
-    """
-    bot_username = os.environ.get("TELEGRAM_BOT_USERNAME", "")
-    if not bot_username:
-        return cors_response(500, {"error": "Bot username not configured"})
-    
-    return cors_response(200, {"bot_username": bot_username})
-
-
-def handle_check_auth_status(cursor, body: dict) -> dict:
-    """
-    POST ?action=check_auth
-    Проверка статуса авторизации по session_id после регистрации в боте.
-    """
-    session_id = body.get("session_id")
-    
-    if not session_id:
-        return cors_response(400, {"error": "session_id required"})
-    
-    schema = get_schema()
-    
-    # Ищем сессию
-    cursor.execute(f"""
-        SELECT user_id, authenticated_at, expires_at
-        FROM {schema}telegram_auth_sessions
-        WHERE session_id = %s
-    """, (session_id,))
-    
-    row = cursor.fetchone()
-    
-    if not row:
-        return cors_response(200, {"authenticated": False, "error": "Session not found"})
-    
-    user_id, authenticated_at, expires_at = row
-    
-    # Проверяем, не истекла ли сессия
-    if datetime.now(timezone.utc) > expires_at.replace(tzinfo=timezone.utc):
-        return cors_response(200, {"authenticated": False, "error": "Session expired"})
-    
-    # Проверяем, авторизован ли пользователь
-    if not authenticated_at or not user_id:
-        return cors_response(200, {"authenticated": False, "pending": True})
-    
-    # Получаем данные пользователя
-    user = get_user_by_id(cursor, user_id)
-    
-    if not user:
-        return cors_response(200, {"authenticated": False, "error": "User not found"})
-    
-    # Проверяем, есть ли username
-    if not user.get("username"):
-        return cors_response(200, {
-            "authenticated": False,
-            "needs_username": True,
-            "user_id": user["id"]
-        })
-    
-    # Генерируем токены
-    jwt_secret = get_env("JWT_SECRET")
-    access_token = create_jwt(user["id"], jwt_secret, expires_in=900)
-    refresh_token = generate_token(64)
-    refresh_token_hash = hash_token(refresh_token)
-    
-    expires_at_token = datetime.now(timezone.utc) + timedelta(days=30)
-    save_refresh_token(cursor, user["id"], refresh_token_hash, expires_at_token)
-    
-    # Удаляем использованную сессию
-    cursor.execute(f"""
-        DELETE FROM {schema}telegram_auth_sessions WHERE session_id = %s
-    """, (session_id,))
-    
-    return cors_response(200, {
-        "authenticated": True,
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "user": user
-    })
-
-
 # =============================================================================
 # MAIN HANDLER
 # =============================================================================
@@ -699,10 +605,6 @@ def handler(event, context):
             response = handle_refresh(cursor, body)
         elif action == "logout" and method == "POST":
             response = handle_logout(cursor, body)
-        elif action == "check_auth" and method == "POST":
-            response = handle_check_auth_status(cursor, body)
-        elif action == "bot-username" and method == "GET":
-            return handle_get_bot_username()
         else:
             response = cors_response(400, {"error": f"Unknown action: {action}"})
 

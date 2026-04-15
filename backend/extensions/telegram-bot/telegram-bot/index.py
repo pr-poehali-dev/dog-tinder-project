@@ -133,7 +133,7 @@ def request_phone_number(chat_id: int, user: dict) -> None:
     )
 
 
-def handle_web_auth(chat_id: int, user: dict, phone: str = None, session_id: str = None) -> None:
+def handle_web_auth(chat_id: int, user: dict, phone: str = None) -> None:
     """Обработка команды /start web_auth."""
     telegram_id = str(user.get("id", ""))
     username = user.get("username")
@@ -142,72 +142,21 @@ def handle_web_auth(chat_id: int, user: dict, phone: str = None, session_id: str
 
     # Если телефона нет, запрашиваем
     if not phone:
-        # Сохраняем session_id в контексте чата
-        if session_id:
-            schema = get_schema()
-            conn = psycopg2.connect(os.environ["DATABASE_URL"])
-            try:
-                cursor = conn.cursor()
-                cursor.execute(f"""
-                    INSERT INTO {schema}telegram_auth_sessions (session_id, telegram_id, chat_id, expires_at)
-                    VALUES (%s, %s, %s, NOW() + INTERVAL '10 minutes')
-                    ON CONFLICT (session_id) DO UPDATE SET telegram_id = %s, chat_id = %s
-                """, (session_id, telegram_id, chat_id, telegram_id, chat_id))
-                conn.commit()
-            finally:
-                conn.close()
-        
         request_phone_number(chat_id, user)
         return
 
-    # Создаём или обновляем пользователя в БД
-    schema = get_schema()
-    conn = psycopg2.connect(os.environ["DATABASE_URL"])
-    try:
-        cursor = conn.cursor()
-        
-        # Проверяем, есть ли пользователь с таким telegram_id
-        cursor.execute(f"""
-            SELECT id FROM {schema}users WHERE telegram_id = %s
-        """, (telegram_id,))
-        existing = cursor.fetchone()
-        
-        user_id = None
-        if not existing:
-            # Создаём нового пользователя
-            cursor.execute(f"""
-                INSERT INTO {schema}users (telegram_id, phone, name)
-                VALUES (%s, %s, %s)
-                RETURNING id
-            """, (telegram_id, phone, first_name or username or 'Пользователь'))
-            user_id = cursor.fetchone()[0]
-        else:
-            # Обновляем существующего
-            user_id = existing[0]
-            cursor.execute(f"""
-                UPDATE {schema}users
-                SET phone = %s, name = COALESCE(name, %s)
-                WHERE telegram_id = %s
-            """, (phone, first_name or username, telegram_id))
-        
-        # Сохраняем привязку session_id к user_id
-        if session_id:
-            cursor.execute(f"""
-                UPDATE {schema}telegram_auth_sessions
-                SET user_id = %s, authenticated_at = NOW()
-                WHERE session_id = %s
-            """, (user_id, session_id))
-        
-        conn.commit()
-    finally:
-        conn.close()
+    token = save_auth_token(telegram_id, username, first_name, last_name)
 
-    # Отправляем сообщение об успешной регистрации
+    site_url = os.environ["SITE_URL"].rstrip("/")
+    auth_url = f"{site_url}/auth/telegram/callback?token={token}&phone={phone}"
+
     bot = get_bot()
     bot.send_message(
         chat_id,
-        "✅ Регистрация успешна!\n\nВернитесь на сайт, чтобы продолжить. Вы будете автоматически авторизованы.",
-        reply_markup=telebot.types.ReplyKeyboardRemove()
+        f"Авторизация готова!\n\nНажмите кнопку ниже, чтобы войти на сайт 👇\n\nСсылка действительна 5 минут.",
+        reply_markup=telebot.types.InlineKeyboardMarkup().add(
+            telebot.types.InlineKeyboardButton("Войти на сайт", url=auth_url)
+        )
     )
 
 
@@ -236,35 +185,12 @@ def process_webhook(body: dict) -> dict:
         # Обработка контакта (номера телефона)
         if contact and contact.get("phone_number"):
             phone = contact.get("phone_number")
-            telegram_id = str(user.get("id", ""))
-            
-            # Ищем session_id для этого пользователя
-            schema = get_schema()
-            conn = psycopg2.connect(os.environ["DATABASE_URL"])
-            try:
-                cursor = conn.cursor()
-                cursor.execute(f"""
-                    SELECT session_id FROM {schema}telegram_auth_sessions
-                    WHERE telegram_id = %s AND authenticated_at IS NULL
-                    ORDER BY created_at DESC LIMIT 1
-                """, (telegram_id,))
-                row = cursor.fetchone()
-                session_id = row[0] if row else None
-            finally:
-                conn.close()
-            
-            handle_web_auth(chat_id, user, phone=phone, session_id=session_id)
+            handle_web_auth(chat_id, user, phone=phone)
         # Обработка команд
         elif text.startswith("/start"):
             parts = text.split(" ", 1)
-            if len(parts) > 1:
-                param = parts[1]
-                # Формат: web_auth_SESSION_ID
-                if param.startswith("web_auth"):
-                    session_id = param.replace("web_auth_", "") if "_" in param else None
-                    handle_web_auth(chat_id, user, session_id=session_id)
-                else:
-                    handle_web_auth(chat_id, user)
+            if len(parts) > 1 and parts[1] == "web_auth":
+                handle_web_auth(chat_id, user)
             else:
                 handle_start(chat_id)
     except telebot.apihelper.ApiTelegramException as e:
